@@ -3,6 +3,7 @@ package com.sslv.services;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -30,6 +31,7 @@ import org.apache.http.config.MessageConstraints;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.conn.HttpConnectionFactory;
 import org.apache.http.conn.ManagedHttpClientConnection;
 import org.apache.http.conn.routing.HttpRoute;
@@ -54,6 +56,7 @@ import org.apache.http.io.SessionInputBuffer;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicLineParser;
 import org.apache.http.message.LineParser;
+import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.CharArrayBuffer;
 import org.jsoup.Jsoup;
@@ -157,7 +160,7 @@ public class HTTPClientProxy {
         ConnectionConfig connectionConfig = ConnectionConfig.custom()
             .setMalformedInputAction(CodingErrorAction.IGNORE)
             .setUnmappableInputAction(CodingErrorAction.IGNORE)
-            .setCharset(Consts.UTF_8)
+            .setCharset(Consts.ASCII)
             .setMessageConstraints(messageConstraints)
             .build();
         
@@ -192,7 +195,8 @@ public class HTTPClientProxy {
             .build();
 
         try {
-            HttpGet httpget = new HttpGet(uri);
+
+        	HttpGet httpget = new HttpGet(uri);
 
             // Request configuration can be overridden at the request level.
             // They will take precedence over the one set at the client level.
@@ -210,7 +214,17 @@ public class HTTPClientProxy {
             context.setCookieStore(cookieStore);
             context.setCredentialsProvider(credentialsProvider);
 
-            CloseableHttpResponse response = httpclient.execute(httpget, context);
+            CloseableHttpResponse response = null;
+            boolean condition = true;
+            do {
+                try {
+                    response = httpclient.execute(httpget, context);
+                    condition = false;
+    			} catch (ConnectTimeoutException e) {
+    				e.printStackTrace();
+    			}
+				
+			} while (condition);
             try {
                 HttpEntity entity = response.getEntity();
 
@@ -259,8 +273,10 @@ public class HTTPClientProxy {
             httpclient.close();
         }
 		
-        Document d = Jsoup.parse(resp, uri.getHost());
+        Document d = 
+        		Jsoup.parse(resp, uri.getHost());
         
+//        Jsoup.parse(new URL(uri).openStream(), "ISO-8859-1", uri);
 		return d;
 	}
 

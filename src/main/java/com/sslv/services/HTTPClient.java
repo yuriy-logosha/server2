@@ -107,7 +107,7 @@ public class HTTPClient {
             // Send post request
             con.setDoOutput(true);
 
-            OutputStreamWriter w = new OutputStreamWriter(con.getOutputStream(), "UTF-8");
+            OutputStreamWriter w = new OutputStreamWriter(con.getOutputStream(), Consts.UTF_8);
 
             w.write(rawData);
             w.close();

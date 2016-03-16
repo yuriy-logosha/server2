@@ -13,16 +13,22 @@ public class SSLVServicesTest {
 	SSLVServices services = new SSLVServices();
 	
 	@Test
-	public void testSearch() {
-		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_SELL, SEARCH_CRITERIA);
-		int i = 0;
-		for (AD ad : adList) {
-			System.out.println(++i + " " + ad);
-		}
-		System.out.println("Total: " + adList.length);
+	public void testSearchRent() {
+		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_RENT, SEARCH_CRITERIA);
+//		int i = 0;
+//		for (AD ad : adList) {
+//			System.out.println(++i + " " + ad);
+//		}
+//		System.out.println("Total: " + adList.length);
 		assertNotNull(adList);
-		
-//		services.put(adList);
+
+	}
+
+	@Test
+	public void testSearchSell() {
+		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_SELL, SEARCH_CRITERIA);
+		assertNotNull(adList);
+
 	}
 
 }

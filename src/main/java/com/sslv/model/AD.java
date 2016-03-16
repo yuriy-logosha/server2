@@ -1,17 +1,26 @@
 package com.sslv.model;
 
+import java.util.Date;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class AD {
 	private long id;
 	private String name;
-	private String body;
+	private String message;
 	private String url;
-	private long cost;
+	private double cost;
+	private String measure;
 	private String location;
+	private Date updated;
+	private Date created;
+	private String series;
 	
-	public AD() {}
+	
+	public AD() {
+		setUpdated(new Date());
+	}
 	
 	public String getName() {
 		return name;
@@ -21,12 +30,12 @@ public class AD {
 		this.name = name;
 	}
 
-	public String getBody() {
-		return body;
+	public String getMessage() {
+		return message;
 	}
 
-	public void setBody(String body) {
-		this.body = body;
+	public void setMessage(String message) {
+		this.message = message;
 	}
 
 	public String getUrl() {
@@ -72,11 +81,11 @@ public class AD {
 		return true;
 	}
 
-	public long getCost() {
+	public double getCost() {
 		return cost;
 	}
 
-	public void setCost(long cost) {
+	public void setCost(double cost) {
 		this.cost = cost;
 	}
 
@@ -86,6 +95,38 @@ public class AD {
 
 	public void setLocation(String location) {
 		this.location = location;
+	}
+
+	public String getMeasure() {
+		return measure;
+	}
+
+	public void setMeasure(String measure) {
+		this.measure = measure;
+	}
+
+	public Date getUpdated() {
+		return updated;
+	}
+
+	public void setUpdated(Date timestamp) {
+		this.updated = timestamp;
+	}
+
+	public Date getCreated() {
+		return created;
+	}
+
+	public void setCreated(Date created) {
+		this.created = created;
+	}
+
+	public String getSeries() {
+		return series;
+	}
+
+	public void setSeries(String series) {
+		this.series = series;
 	}
 	
 	
