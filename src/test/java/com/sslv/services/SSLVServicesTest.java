@@ -13,18 +13,18 @@ public class SSLVServicesTest {
 	
 	SSLVServices services = new SSLVServices();
 	
-	@Test
-	@Ignore
-	public void testSearchRent() {
-		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_RENT, SEARCH_CRITERIA);
+//	@Test
+//	@Ignore
+//	public void testSearchRent() {
+//		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_RENT, SEARCH_CRITERIA);
 //		int i = 0;
 //		for (AD ad : adList) {
 //			System.out.println(++i + " " + ad);
 //		}
 //		System.out.println("Total: " + adList.length);
-		assertNotNull(adList);
-
-	}
+//		assertNotNull(adList);
+//
+//	}
 
 	@Test
 	@Ignore
