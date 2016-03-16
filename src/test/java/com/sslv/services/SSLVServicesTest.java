@@ -2,6 +2,7 @@ package com.sslv.services;
 
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.sslv.model.AD;
@@ -13,6 +14,7 @@ public class SSLVServicesTest {
 	SSLVServices services = new SSLVServices();
 	
 	@Test
+	@Ignore
 	public void testSearchRent() {
 		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_RENT, SEARCH_CRITERIA);
 //		int i = 0;
@@ -25,6 +27,7 @@ public class SSLVServicesTest {
 	}
 
 	@Test
+	@Ignore
 	public void testSearchSell() {
 		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_SELL, SEARCH_CRITERIA);
 		assertNotNull(adList);
