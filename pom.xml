@@ -90,4 +90,8 @@
 	
   </dependencies>
   <packaging>war</packaging>
+  <scm>
+  	<url>https://github.com/yuriy-logosha/sslvParser.git</url>
+  	<developerConnection>Iurii Logosha</developerConnection>
+  </scm>
 </project>

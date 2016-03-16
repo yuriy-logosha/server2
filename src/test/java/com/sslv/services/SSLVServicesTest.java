@@ -27,7 +27,6 @@ public class SSLVServicesTest {
 //	}
 
 	@Test
-	@Ignore
 	public void testSearchSell() {
 		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_SELL, SEARCH_CRITERIA);
 		assertNotNull(adList);
