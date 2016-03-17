@@ -63,6 +63,7 @@ import org.apache.http.message.BasicLineParser;
 import org.apache.http.message.LineParser;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.CharArrayBuffer;
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -70,15 +71,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sslv.model.AD;
 
 public class HTTPClient {
+	static Logger logger = Logger.getLogger(HTTPClient.class);
 
 	public static Document get(String url){
 		Document doc = null;
 		try {
-            System.out.println("GET " + url);
+            logger.debug("GET " + url);
 			doc = Jsoup.connect(url).get();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.debug(e);
 		}
 		return doc;
 	}
@@ -91,8 +92,8 @@ public class HTTPClient {
 //			Jsoup.connect(url).header("Accept", "application/json").data(URLEncoder.encode(mapper.writeValueAsString(ad)), "").post();
             
             String rawData = mapper.writeValueAsString(ad);
-            System.out.println("POST " + url +" " + rawData);
-//            String url = "http://www.coordiutil.com/rpc/server.php";
+            logger.debug("POST " + url +" " + rawData);
+
             URL obj = new URL(url);
             HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
@@ -127,8 +128,7 @@ public class HTTPClient {
             
             
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.debug(e);
 		}
 	}
 

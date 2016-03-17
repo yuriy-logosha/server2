@@ -2,6 +2,7 @@ package com.sslv.services;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.CodingErrorAction;
@@ -59,11 +60,13 @@ import org.apache.http.message.LineParser;
 import org.apache.http.params.CoreProtocolPNames;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.CharArrayBuffer;
+import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 
 public class HTTPClientProxy {
+	static Logger logger = Logger.getLogger(HTTPClientProxy.class);
 
 	private static final String HTTPS = "https";
 
@@ -220,15 +223,16 @@ public class HTTPClientProxy {
                 try {
                     response = httpclient.execute(httpget, context);
                     condition = false;
-    			} catch (ConnectTimeoutException e) {
-    				e.printStackTrace();
+    			} catch (Exception e) {
+    				logger.debug(httpget.getURI().toURL().toString(), e);
+    				Thread.sleep(5000);
     			}
 				
 			} while (condition);
             try {
                 HttpEntity entity = response.getEntity();
 
-//                System.out.println(response.getStatusLine() + " - " + httpget.getURI());
+                logger.debug(response.getStatusLine() + " - " + httpget.getURI());
                 if (entity != null) {
                     InputStream is = entity.getContent();
                     try {
