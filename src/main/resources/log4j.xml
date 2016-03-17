@@ -21,23 +21,30 @@
 		</layout>
 	</appender>
 
-	<appender name="RollingFileAppender" type="log4net.Appender.RollingFileAppender">
-		<file value="log.txt" />
-		<appendToFile value="true" />
-		<rollingStyle value="Size" />
-		<maxSizeRollBackups value="10" />
-		<maximumFileSize value="100KB" />
-		<staticLogFileName value="true" />
-		<layout type="log4net.Layout.PatternLayout">
-			<conversionPattern
-				value="%date [%thread] %-5level %logger [%property{NDC}] - %message%newline" />
-		</layout>
-	</appender>
+<!-- 	<appender name="RollingFileAppender" type="log4net.Appender.RollingFileAppender"> -->
+<!-- 		<file value="log.txt" /> -->
+<!-- 		<appendToFile value="true" /> -->
+<!-- 		<rollingStyle value="Size" /> -->
+<!-- 		<maxSizeRollBackups value="10" /> -->
+<!-- 		<maximumFileSize value="100KB" /> -->
+<!-- 		<staticLogFileName value="true" /> -->
+<!-- 		<layout type="log4net.Layout.PatternLayout"> -->
+<!-- 			<conversionPattern -->
+<!-- 				value="%date [%thread] %-5level %logger [%property{NDC}] - %message%newline" /> -->
+<!-- 		</layout> -->
+<!-- 	</appender> -->
+	  <appender name="R" class="org.apache.log4j.RollingFileAppender"> 
+    <param name="file" value="console.log"/>
+    <param name="MaxBackupIndex" value="1"/>
+    <layout class="org.apache.log4j.PatternLayout"> 
+      <param name="ConversionPattern" value="%p %t %c - %m%n"/> 
+    </layout> 
+  </appender>
 
 	<!-- Application Loggers -->
 	<logger name="com.sslv">
 		<level value="DEBUG" />
-		<appender-ref ref="RollingFileAppender" />
+		<appender-ref ref="R" />
 	</logger>
 
 	<!-- Root Logger -->
