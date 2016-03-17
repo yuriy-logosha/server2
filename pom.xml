@@ -32,6 +32,7 @@
   		<groupId>junit</groupId>
   		<artifactId>junit</artifactId>
   		<version>4.11</version>
+  		<scope>test</scope>
   	</dependency>
 		<dependency>
 			<groupId>com.sun.jersey</groupId>
@@ -60,7 +61,6 @@
 					<artifactId>jmxri</artifactId>
 				</exclusion>
 			</exclusions>
-			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
