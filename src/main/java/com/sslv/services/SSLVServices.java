@@ -69,10 +69,8 @@ public class SSLVServices {
 		public void run(){
 			try {
 				getPage(type, getPageURI(SEARCH_PATH + type + "/" + PAGE + index + HTML));
-				//HTTPClient.post("http://127.0.0.1:9200/sslv/" + type + "/" + ad.getId(), ad);
-//wait(999999);
 			} catch (Exception e) {
-				e.printStackTrace();
+				logger.error(e);
 			}
 			
 		}
@@ -130,7 +128,7 @@ public class SSLVServices {
 				try {
 					ad.setCost(Double.parseDouble(costValue));
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error(e);
 				}
 				ad.setMeasure(StringEscapeUtils.unescapeHtml(costMeasure));
 				
@@ -204,7 +202,7 @@ public class SSLVServices {
 					int val = Integer.parseInt(result);
 					return val;
 				} catch (Exception e) {
-					e.printStackTrace();
+					logger.error(e);
 				}
 			}
 		}
@@ -217,7 +215,7 @@ public class SSLVServices {
 		try {
 			uri = HTTPClientProxy.getURIBuilder(DOMAIN).setPath(path).build();
 		} catch (URISyntaxException e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return uri;
 	}
@@ -234,7 +232,7 @@ public class SSLVServices {
 		try {
 			page = HTTPClientProxy.execute(uri);
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return page;
 	}

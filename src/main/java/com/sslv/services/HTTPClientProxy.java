@@ -224,7 +224,7 @@ public class HTTPClientProxy {
                     response = httpclient.execute(httpget, context);
                     condition = false;
     			} catch (Exception e) {
-    				logger.debug(httpget.getURI().toURL().toString(), e);
+    				logger.error(httpget.getURI().toURL().toString(), e);
     				Thread.sleep(5000);
     			}
 				

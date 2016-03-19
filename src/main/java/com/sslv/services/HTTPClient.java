@@ -28,7 +28,7 @@ public class HTTPClient {
             logger.debug("GET " + url);
 			doc = Jsoup.connect(url).get();
 		} catch (IOException e) {
-			logger.debug(e);
+			logger.error(e);
 		}
 		return doc;
 	}
@@ -77,7 +77,7 @@ public class HTTPClient {
             
             
 		} catch (IOException e) {
-			logger.debug(e);
+			logger.error(e);
 		}
 	}
 
