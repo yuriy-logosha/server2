@@ -152,7 +152,7 @@ public class SSLVServices {
 					e.printStackTrace();
 				}
 				ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
-//				HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
+				HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
 			}
 		}
 	}
