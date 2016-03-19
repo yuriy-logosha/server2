@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -87,28 +89,14 @@ public class SSLVServices {
 	public void parseRootPage(String type, String url){
 		Document first = getPage(getPageURI(url));
 		int max = getMaxPageNumber(first.select("a[name=nav_id]"));
-		MyThread[] arr = new MyThread[max];
+		ExecutorService executor = Executors.newFixedThreadPool(5);
 		for(int i = 0; i < max; i++){
 			MyThread t = new MyThread(type, i+1);
-			arr[i] = t;
-			t.start();
+			executor.execute(t);
 		}
-		boolean asble = true;
-		do{
-		for(int i = 1; i <= max; i++){
-			
-			if(arr[i].isAlive()){
-				asble = true;
-				try {
-					arr[i].join(3000);
-				} catch (InterruptedException e) {
-					logger.debug(e);
-				}
-			} else
-				asble = false;
-			
-		}
-		}while(asble);
+		executor.shutdown();
+		while (!executor.isTerminated()) {
+        }
 		
 	}
 
@@ -164,7 +152,7 @@ public class SSLVServices {
 					e.printStackTrace();
 				}
 				ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
-				HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
+//				HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
 			}
 		}
 	}
