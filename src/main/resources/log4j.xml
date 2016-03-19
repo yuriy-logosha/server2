@@ -43,7 +43,7 @@
 
 	<!-- Application Loggers -->
 	<logger name="com.sslv">
-		<level value="DEBUG" />
+		<level value="INFO" />
 		<appender-ref ref="R" />
 	</logger>
 
