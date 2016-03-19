@@ -89,7 +89,7 @@ public class SSLVServices {
 	public void parseRootPage(String type, String url){
 		Document first = getPage(getPageURI(url));
 		int max = getMaxPageNumber(first.select("a[name=nav_id]"));
-		ExecutorService executor = Executors.newFixedThreadPool(5);
+		ExecutorService executor = Executors.newFixedThreadPool(10);
 		for(int i = 0; i < max; i++){
 			MyThread t = new MyThread(type, i+1);
 			executor.execute(t);
