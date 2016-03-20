@@ -22,63 +22,60 @@ import com.sslv.model.AD;
 public class HTTPClient {
 	static Logger logger = Logger.getLogger(HTTPClient.class);
 
-	public static Document get(String url){
+	public static Document get(String url) {
 		Document doc = null;
 		try {
-            logger.debug("GET " + url);
+			logger.debug("GET " + url);
 			doc = Jsoup.connect(url).get();
 		} catch (IOException e) {
 			logger.error(e);
 		}
 		return doc;
 	}
-	
 
-	public static void post(String url, AD ad){
-		try {
-			ObjectMapper mapper = new ObjectMapper();
+	public static void post(String url, AD ad) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
 
-//			Jsoup.connect(url).header("Accept", "application/json").data(URLEncoder.encode(mapper.writeValueAsString(ad)), "").post();
-            
-            String rawData = mapper.writeValueAsString(ad);
-            logger.debug("POST " + url +" " + rawData);
+		// Jsoup.connect(url).header("Accept",
+		// "application/json").data(URLEncoder.encode(mapper.writeValueAsString(ad)),
+		// "").post();
 
-            URL obj = new URL(url);
-            HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+		String rawData = mapper.writeValueAsString(ad);
+		logger.debug("POST " + url + " " + rawData);
 
-            //add reuqest header
-            con.setRequestMethod("POST");
-            con.setRequestProperty("Accept", "application/json");
-            con.setRequestProperty("Accept-Encoding", "gzip,deflate,sdch");
-            con.setRequestProperty("Accept-Language", "es-ES,es;q=0.8");
-            con.setRequestProperty("Connection", "keep-alive");
-            con.setRequestProperty("X-Requested-With", "XMLHttpRequest");
+		URL obj = new URL(url);
+		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
-            // Send post request
-            con.setDoOutput(true);
+		// add request header
+		con.setRequestMethod("POST");
+		con.setRequestProperty("Accept", "application/json");
+		con.setRequestProperty("Accept-Encoding", "gzip,deflate,sdch");
+		con.setRequestProperty("Accept-Language", "es-ES,es;q=0.8");
+		con.setRequestProperty("Connection", "keep-alive");
+		con.setRequestProperty("X-Requested-With", "XMLHttpRequest");
 
-            OutputStreamWriter w = new OutputStreamWriter(con.getOutputStream(), Consts.UTF_8);
+		// Send post request
+		con.setDoOutput(true);
 
-            w.write(rawData);
-            w.close();
+		OutputStreamWriter w = new OutputStreamWriter(con.getOutputStream(),
+				Consts.UTF_8);
 
-            int responseCode = con.getResponseCode();
+		w.write(rawData);
+		w.close();
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+		int responseCode = con.getResponseCode();
 
-            String inputLine;
-            StringBuffer response = new StringBuffer();
+		BufferedReader in = new BufferedReader(new InputStreamReader(
+				con.getInputStream()));
 
-            while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
-            
-            
-            
-		} catch (IOException e) {
-			logger.error(e);
+		String inputLine;
+		StringBuffer response = new StringBuffer();
+
+		while ((inputLine = in.readLine()) != null) {
+			response.append(inputLine);
 		}
+		in.close();
+
 	}
 
 }

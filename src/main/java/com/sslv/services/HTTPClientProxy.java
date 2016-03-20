@@ -70,6 +70,42 @@ public class HTTPClientProxy {
 
 	private static final String HTTPS = "https";
 
+    // Use custom message parser / writer to customize the way HTTP
+    // messages are parsed from and written out to the data stream.
+    static HttpMessageParserFactory<HttpResponse> responseParserFactory = new DefaultHttpResponseParserFactory() {
+
+        @Override
+        public HttpMessageParser<HttpResponse> create(
+            SessionInputBuffer buffer, MessageConstraints constraints) {
+            LineParser lineParser = new BasicLineParser() {
+
+                @Override
+                public Header parseHeader(final CharArrayBuffer buffer) {
+                    try {
+                        return super.parseHeader(buffer);
+                    } catch (ParseException ex) {
+                        return new BasicHeader(buffer.toString(), null);
+                    }
+                }
+
+            };
+            return new DefaultHttpResponseParser(
+                buffer, lineParser, DefaultHttpResponseFactory.INSTANCE, constraints) {
+
+                @Override
+                protected boolean reject(final CharArrayBuffer line, int count) {
+                    // try to ignore all garbage preceding a status line infinitely
+                    return false;
+                }
+
+            };
+        }
+
+    };
+
+	static HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory = new ManagedHttpClientConnectionFactory(
+			new DefaultHttpRequestWriterFactory(), responseParserFactory);
+	
 	public static Document execute(URI uri) throws Exception {
 		return execute(HttpGet.METHOD_NAME, uri);
 	}
@@ -83,64 +119,17 @@ public class HTTPClientProxy {
 	}
 	
 	public static Document execute(String method, URI uri) throws Exception {
+		if(logger.isDebugEnabled()){
+			logger.debug(String.format("Execute %s - %s", method, uri.getRawPath()));
+		}
 		validate(method);
 		String resp = null;
 		
-        // Use custom message parser / writer to customize the way HTTP
-        // messages are parsed from and written out to the data stream.
-        HttpMessageParserFactory<HttpResponse> responseParserFactory = new DefaultHttpResponseParserFactory() {
-
-            @Override
-            public HttpMessageParser<HttpResponse> create(
-                SessionInputBuffer buffer, MessageConstraints constraints) {
-                LineParser lineParser = new BasicLineParser() {
-
-                    @Override
-                    public Header parseHeader(final CharArrayBuffer buffer) {
-                        try {
-                            return super.parseHeader(buffer);
-                        } catch (ParseException ex) {
-                            return new BasicHeader(buffer.toString(), null);
-                        }
-                    }
-
-                };
-                return new DefaultHttpResponseParser(
-                    buffer, lineParser, DefaultHttpResponseFactory.INSTANCE, constraints) {
-
-                    @Override
-                    protected boolean reject(final CharArrayBuffer line, int count) {
-                        // try to ignore all garbage preceding a status line infinitely
-                        return false;
-                    }
-
-                };
-            }
-
-        };
-        HttpMessageWriterFactory<HttpRequest> requestWriterFactory = new DefaultHttpRequestWriterFactory();
-
-        // Use a custom connection factory to customize the process of
-        // initialization of outgoing HTTP connections. Beside standard connection
-        // configuration parameters HTTP connection factory can define message
-        // parser / writer routines to be employed by individual connections.
-        HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory = new ManagedHttpClientConnectionFactory(
-                requestWriterFactory, responseParserFactory);
-
-        // Client HTTP connection objects when fully initialized can be bound to
-        // an arbitrary network socket. The process of network socket initialization,
-        // its connection to a remote address and binding to a local one is controlled
-        // by a connection socket factory.
-
-        // SSL context for secure connections can be created either based on
-        // system or application specific properties.
-        SSLContext sslcontext = SSLContexts.createSystemDefault();
-
         // Create a registry of custom connection socket factories for supported
         // protocol schemes.
         Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
             .register("http", PlainConnectionSocketFactory.INSTANCE)
-            .register(HTTPS, new SSLConnectionSocketFactory(sslcontext))
+            .register(HTTPS, new SSLConnectionSocketFactory(SSLContexts.createSystemDefault()))
             .build();
 
         // Create a connection manager with custom configuration.
@@ -232,7 +221,9 @@ public class HTTPClientProxy {
             try {
                 HttpEntity entity = response.getEntity();
 
-                logger.debug(response.getStatusLine() + " - " + httpget.getURI());
+                if(logger.isDebugEnabled()){
+                	logger.debug(response.getStatusLine() + " - " + httpget.getURI());
+                }
                 if (entity != null) {
                     InputStream is = entity.getContent();
                     try {
@@ -255,20 +246,20 @@ public class HTTPClientProxy {
                 // be used to examine updated state and various objects affected
                 // by the request execution.
 
-//                // Last executed request
-//                context.getRequest();
-//                // Execution route
-//                context.getHttpRoute();
-//                // Target auth state
-//                context.getTargetAuthState();
-//                // Proxy auth state
-//                context.getTargetAuthState();
-//                // Cookie origin
-//                context.getCookieOrigin();
-//                // Cookie spec used
-//                context.getCookieSpec();
-//                // User security token
-//                context.getUserToken();
+                // Last executed request
+                context.getRequest();
+                // Execution route
+                context.getHttpRoute();
+                // Target auth state
+                context.getTargetAuthState();
+                // Proxy auth state
+                context.getTargetAuthState();
+                // Cookie origin
+                context.getCookieOrigin();
+                // Cookie spec used
+                context.getCookieSpec();
+                // User security token
+                context.getUserToken();
 
             } finally {
                 response.close();

@@ -1,5 +1,6 @@
 package com.sslv.services;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -20,6 +21,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.http.client.utils.DateUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.util.EncodingUtils;
 import org.apache.log4j.Logger;
@@ -87,6 +89,10 @@ public class SSLVServices {
 	public void parseRootPage(String type, String url){
 		Document first = getPage(getPageURI(url));
 		int max = getMaxPageNumber(first.select("a[name=nav_id]"));
+		if(logger.isDebugEnabled()){
+			logger.debug(String.format("Found %s pages", max));
+		}
+
 		String property = System.getProperty("threads");
 		ExecutorService executor = Executors.newFixedThreadPool((property!= null)?Integer.valueOf(property):10);
 		for(int i = 0; i < max; i++){
@@ -125,18 +131,15 @@ public class SSLVServices {
 					costValue = costArr[0];
 					costMeasure = costArr[costArr.length-1];
 				}
-				try {
-					ad.setCost(Double.parseDouble(costValue));
-				} catch (Exception e) {
-					logger.error(e);
-				}
+				ad.setCost(Double.parseDouble(costValue));
 				ad.setMeasure(StringEscapeUtils.unescapeHtml(costMeasure));
 				
 				Elements adInfo = ((Element)node).select("td[class=msga2-o pp6]");
 				
 				//1. Location
 				Element locationNode = adInfo.get(0);
-				String location = text((eval(locationNode) instanceof TextNode)?eval(locationNode):eval(eval(locationNode)));
+				Node item = eval(locationNode);
+				String location = text((item instanceof TextNode)?item:eval(item));
 
 				ad.setLocation(StringEscapeUtils.unescapeHtml(location));
 				 
@@ -144,14 +147,20 @@ public class SSLVServices {
 				Element message = messagePage.select("div#msg_div_msg").first();
 				ad.setMessage(StringEscapeUtils.unescapeHtml(concatenateNodes(message.childNodes()).replace("\r", "").replace("\n", "")));
 				Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
+
 				try {
-					Date createdDate = (new SimpleDateFormat("dd.MM.yyyy HH:mm")).parse(text(eval(date_element)).substring(6));
+					Date createdDate = null;
+					createdDate = (new SimpleDateFormat("dd.MM.yyyy HH:mm")).parse(text(eval(date_element)).substring(6));
 					ad.setCreated(createdDate);
 				} catch (ParseException e) {
-					e.printStackTrace();
+					logger.error("Error parsing creation date.", e);
 				}
 				ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
-				HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
+//				try {
+//					HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
+//				} catch (IOException e) {
+//					logger.error("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), e);
+//				}
 			}
 		}
 	}
@@ -230,6 +239,9 @@ public class SSLVServices {
 	private Document getPage(URI uri){
 		Document page = null;
 		try {
+			if(logger.isDebugEnabled()){
+				logger.debug(String.format("Getting page %s", uri.getRawPath()));
+			}
 			page = HTTPClientProxy.execute(uri);
 		} catch (Exception e) {
 			logger.error(e);
