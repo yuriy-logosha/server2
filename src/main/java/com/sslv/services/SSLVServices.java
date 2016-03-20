@@ -3,29 +3,17 @@ package com.sslv.services;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.http.client.utils.DateUtils;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.util.EncodingUtils;
 import org.apache.log4j.Logger;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -48,12 +36,12 @@ public class SSLVServices {
 	private static final String PAGE_MAIN = "page_main";
 	private static final String DOMAIN = "www.ss.lv";
 	
-	private static final String SEARCH_PATH = "/ru/real-estate/flats/riga/all/";
+	private static final String SEARCH_PATH = "/ru/real-estate/flats/%s/%s/";
 	private static final String SEARCH_QUERY_VAR_NAME = "q";
 	
 	
 	private static final String DB_PROVIDER = "127.0.0.1:9200";
-	private static final String REPOSITORY = "twitter";
+	private static final String REPOSITORY = "sslv";
 
 	class MyThread extends Thread {
 		
@@ -70,7 +58,7 @@ public class SSLVServices {
 		@Override
 		public void run(){
 			try {
-				getPage(type, getPageURI(SEARCH_PATH + type + "/" + PAGE + index + HTML));
+				getPage(type, getPageURI(getSearchPath() + type + "/" + PAGE + index + HTML));
 			} catch (Exception e) {
 				logger.error(e);
 			}
@@ -78,10 +66,19 @@ public class SSLVServices {
 		}
 	}
 	
+	private String getSearchPath(){
+		String property = System.getProperty("scope");
+		String scope = (property == null)?"all":property; 
+		property = System.getProperty("location");
+		String location = (property == null)?"riga":property; 
+		return String.format(SEARCH_PATH, location, scope);
+
+	}
+	
 	public AD[] search(String type, String searchCriteria) {
 		//Get first page
 		Set<AD> adss = new HashSet<>();
-		parseRootPage(type, SEARCH_PATH + type + "/page1.html");
+		parseRootPage(type, getSearchPath() + type + "/page1.html");
 
 		return adss.toArray(new AD[0]);
 	}
@@ -89,8 +86,8 @@ public class SSLVServices {
 	public void parseRootPage(String type, String url){
 		Document first = getPage(getPageURI(url));
 		int max = getMaxPageNumber(first.select("a[name=nav_id]"));
-		if(logger.isDebugEnabled()){
-			logger.debug(String.format("Found %s pages", max));
+		if(logger.isInfoEnabled()){
+			logger.info(String.format("Found %s pages", max));
 		}
 
 		String property = System.getProperty("threads");
@@ -108,59 +105,72 @@ public class SSLVServices {
 	public void parsePage(String type, Document page){
 		Element root = page.select("form#filter_frm > table[align=center] > tbody").first();
 		Elements childNodes = page.select("tr[id~=^tr_\\d]");
+		if(logger.isInfoEnabled()){
+			logger.info(String.format("Found %s posts.", childNodes.size()));
+		}
 
-		for (Node node : childNodes) {
-			if( node.getClass().equals(Element.class) && node.hasAttr(ID) && !node.attr(ID).equalsIgnoreCase("head_line")){
-				AD ad = new AD();
+		for (Element node : childNodes) {
+			AD ad = new AD();
 
-				Element adBody = ((Element)node).select("td[class=msg2]").first();
-				Elements select = adBody.select("div > a");
-				ad.setUrl(select.attr(HREF));
-				ad.setName(select.attr(ID));
-				ad.setId(new Long(ad.getName().replace("dm_", "")));
-				
-				Element costEl = root.select("tr#tr_"+ad.getId()+">td:eq(8)").first();
-				String costValue = "";
-				String costMeasure = "";
-				if(costEl.childNodes().size() > 1){
-					costValue = text(eval(eval(costEl))).replace(",", "");
-					costMeasure = text(costEl.childNode(1)).trim();
-				} else {
-					String[] costArr;
-					costArr = text(eval(costEl)).replace(",", "").split(" ");
-					costValue = costArr[0];
-					costMeasure = costArr[costArr.length-1];
-				}
-				ad.setCost(Double.parseDouble(costValue));
-				ad.setMeasure(StringEscapeUtils.unescapeHtml(costMeasure));
-				
-				Elements adInfo = ((Element)node).select("td[class=msga2-o pp6]");
-				
-				//1. Location
-				Element locationNode = adInfo.get(0);
-				Node item = eval(locationNode);
-				String location = text((item instanceof TextNode)?item:eval(item));
+			Element adBody = node.select("td[class=msg2]").first();
+			Elements select = adBody.select("div > a");
+			ad.setUrl(select.attr(HREF));
+			ad.setName(select.attr(ID));
+			ad.setId(Long.parseLong(ad.getName().replace("dm_", "")));
+			
+			Element costEl = root.select("tr#tr_"+ad.getId()+">td:eq(8)").first();
+			String costValue = "";
+			String costMeasure = "";
+			if(costEl.childNodes().size() > 1){
+				costValue = text(eval(eval(costEl))).replace(",", "");
+				costMeasure = text(costEl.childNode(1)).trim();
+			} else {
+				String[] costArr;
+				costArr = text(eval(costEl)).replace(",", "").split(" ");
+				costValue = costArr[0];
+				costMeasure = costArr[costArr.length-1];
+			}
+			ad.setCost(Double.parseDouble(costValue));
+			ad.setMeasure(StringEscapeUtils.unescapeHtml(costMeasure));
+			
+			Elements adInfo = ((Element)node).select("td[class=msga2-o pp6]");
+			
+			//1. Location
+			Element locationNode = adInfo.get(0);
+			Node item = eval(locationNode);
+			String location = text((item instanceof TextNode)?item:eval(item));
 
-				ad.setLocation(StringEscapeUtils.unescapeHtml(location));
-				 
-				Document messagePage = getPage(getPageURI(ad.getUrl()));
-				Element message = messagePage.select("div#msg_div_msg").first();
-				ad.setMessage(StringEscapeUtils.unescapeHtml(concatenateNodes(message.childNodes()).replace("\r", "").replace("\n", "")));
-				Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
+			ad.setLocation(StringEscapeUtils.unescapeHtml(location));
 
-				try {
-					Date createdDate = null;
-					createdDate = (new SimpleDateFormat("dd.MM.yyyy HH:mm")).parse(text(eval(date_element)).substring(6));
-					ad.setCreated(createdDate);
-				} catch (ParseException e) {
-					logger.error("Error parsing creation date.", e);
-				}
-				ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
-				try {
-					HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
-				} catch (IOException e) {
-					logger.error("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), e);
-				}
+			if(logger.isInfoEnabled()){
+				logger.info(String.format("Requesting post info: %s", ad.getUrl()));
+			}
+
+			Document messagePage = getPage(getPageURI(ad.getUrl()));
+			Element message = messagePage.select("div#msg_div_msg").first();
+			ad.setMessage(StringEscapeUtils.unescapeHtml(concatenateNodes(message.childNodes()).replace("\r", "").replace("\n", "")));
+//			String[] coords = message.select("a[class=ads_opt_link_map]").attr("onclick").split(";")[0].split("'")[3].split("=")[3].split(",");
+//			String x = coords[0];
+//			String y = coords[1];
+//			ad.setc
+			Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
+
+			try {
+				Date createdDate = null;
+				createdDate = (new SimpleDateFormat("dd.MM.yyyy HH:mm")).parse(text(eval(date_element)).substring(6));
+				ad.setCreated(createdDate);
+			} catch (ParseException e) {
+				logger.error("Error parsing creation date.", e);
+			}
+			ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
+
+			if(logger.isInfoEnabled()){
+				logger.info(String.format("Saving post #%s", ad.getId()));
+			}
+			try {
+				HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
+			} catch (IOException e) {
+				logger.error("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), e);
 			}
 		}
 	}
@@ -193,12 +203,6 @@ public class SSLVServices {
 		return sb.toString();
 	}
 
-	public AD getADbyID(String id) {
-		
-		return null;
-	}
-	
-	
 	private static int getMaxPageNumber(Elements pagesNodes) {
 		for (Node node : pagesNodes) {
 			if(node instanceof Element && ((Element) node).tagName().equalsIgnoreCase("a") && node.attr("name").equalsIgnoreCase("nav_id") && node.attr("rel").equalsIgnoreCase("prev")){
@@ -231,7 +235,13 @@ public class SSLVServices {
 	
 	private Document getPage(String type, URI uri){
 		Document page = null;
+		if(logger.isInfoEnabled()){
+			logger.info(String.format("Requesting page %s", uri.getRawPath()));
+		}
 		page = getPage(uri);
+		if(logger.isInfoEnabled()){
+			logger.info(String.format("Page reseived. Parsing %s", uri.getRawPath()));
+		}
 		parsePage(type, page);
 		return page;
 	}
@@ -239,9 +249,6 @@ public class SSLVServices {
 	private Document getPage(URI uri){
 		Document page = null;
 		try {
-			if(logger.isDebugEnabled()){
-				logger.debug(String.format("Getting page %s", uri.getRawPath()));
-			}
 			page = HTTPClientProxy.execute(uri);
 		} catch (Exception e) {
 			logger.error(e);
