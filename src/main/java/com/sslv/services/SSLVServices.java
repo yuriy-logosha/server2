@@ -156,11 +156,11 @@ public class SSLVServices {
 					logger.error("Error parsing creation date.", e);
 				}
 				ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
-//				try {
-//					HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
-//				} catch (IOException e) {
-//					logger.error("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), e);
-//				}
+				try {
+					HTTPClient.post("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), ad);
+				} catch (IOException e) {
+					logger.error("http://127.0.0.1:9200/sslv/"+type+"/" + ad.getId(), e);
+				}
 			}
 		}
 	}
