@@ -11,11 +11,19 @@ public class AD {
 	private String message;
 	private String url;
 	private double cost;
+	private double costPerM2;
 	private String measure;
 	private String location;
 	private Date updated;
 	private Date created;
 	private String series;
+	private String addr;
+	private double square;
+	private String floor;
+	private String buildingType;
+	private int rooms;
+	private String city;
+	private String area;
 	
 	
 	public AD() {
@@ -127,6 +135,70 @@ public class AD {
 
 	public void setSeries(String series) {
 		this.series = series;
+	}
+
+	public double getCostPerM2() {
+		return costPerM2;
+	}
+
+	public void setCostPerM2(double costPerM2) {
+		this.costPerM2 = costPerM2;
+	}
+
+	public String getAddr() {
+		return addr;
+	}
+
+	public void setAddr(String addr) {
+		this.addr = addr;
+	}
+
+	public double getSquare() {
+		return square;
+	}
+
+	public void setSquare(double square) {
+		this.square = square;
+	}
+
+	public String getFloor() {
+		return floor;
+	}
+
+	public void setFloor(String floor) {
+		this.floor = floor;
+	}
+
+	public String getBuildingType() {
+		return buildingType;
+	}
+
+	public void setBuildingType(String buildingType) {
+		this.buildingType = buildingType;
+	}
+
+	public int getRooms() {
+		return rooms;
+	}
+
+	public void setRooms(int rooms) {
+		this.rooms = rooms;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
+	}
+
+	public String getArea() {
+		return area;
+	}
+
+	public void setArea(String area) {
+		this.area = area;
 	}
 	
 	

@@ -87,7 +87,7 @@ public class SSLVServices {
 		Document first = getPage(getPageURI(url));
 		int max = getMaxPageNumber(first.select("a[name=nav_id]"));
 		if(logger.isInfoEnabled()){
-			logger.info(String.format("Found %s pages", max));
+			logger.info(String.format("Found %s page(s)", max));
 		}
 
 		String property = System.getProperty("threads");
@@ -106,7 +106,7 @@ public class SSLVServices {
 		Element root = page.select("form#filter_frm > table[align=center] > tbody").first();
 		Elements childNodes = page.select("tr[id~=^tr_\\d]");
 		if(logger.isInfoEnabled()){
-			logger.info(String.format("Found %s posts.", childNodes.size()));
+			logger.info(String.format("Found %s post(s)", childNodes.size()));
 		}
 
 		for (Element node : childNodes) {
@@ -119,19 +119,9 @@ public class SSLVServices {
 			ad.setId(Long.parseLong(ad.getName().replace("dm_", "")));
 			
 			Element costEl = root.select("tr#tr_"+ad.getId()+">td:eq(8)").first();
-			String costValue = "";
-			String costMeasure = "";
-			if(costEl.childNodes().size() > 1){
-				costValue = text(eval(eval(costEl))).replace(",", "");
-				costMeasure = text(costEl.childNode(1)).trim();
-			} else {
-				String[] costArr;
-				costArr = text(eval(costEl)).replace(",", "").split(" ");
-				costValue = costArr[0];
-				costMeasure = costArr[costArr.length-1];
-			}
-			ad.setCost(Double.parseDouble(costValue));
-			ad.setMeasure(StringEscapeUtils.unescapeHtml(costMeasure));
+			String costStr = concatenateNodes(costEl.childNodes());
+			ad.setCost(CostParser.parse(costStr));
+			ad.setMeasure(StringEscapeUtils.unescapeHtml(costStr.substring(costStr.length() - 1)));
 			
 			Elements adInfo = ((Element)node).select("td[class=msga2-o pp6]");
 			
@@ -153,6 +143,20 @@ public class SSLVServices {
 //			String x = coords[0];
 //			String y = coords[1];
 //			ad.setc
+
+			String rooms = message.select("td#tdo_1").text();
+			if(!"-".equals(rooms)){
+				ad.setRooms(Integer.parseInt(rooms));
+			}
+			ad.setSquare(Double.parseDouble(message.select("td#tdo_3").text()));
+				
+			ad.setFloor(message.select("td#tdo_4").text());
+			ad.setSeries(message.select("td#tdo_6").text());
+			ad.setBuildingType(message.select("td#tdo_2").text());
+			ad.setCity(message.select("td#tdo_20").text());
+			ad.setArea(message.select("td#tdo_856").text());
+			ad.setAddr(message.select("td#tdo_11").text().replace("[Карта]", "").trim());
+			
 			Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
 
 			try {
@@ -179,14 +183,14 @@ public class SSLVServices {
 		return node.childNodes();
 	}
 
-	private Node eval (Node node){
+	private static Node eval (Node node){
 		if(node == null || node.childNodeSize() == 0){
 			return null;
 		}
 		return node.childNode(0);
 	}
 	
-	private String text (Node node){
+	private static String text (Node node){
 		return ((TextNode) node).getWholeText();
 	}
 
@@ -256,5 +260,11 @@ public class SSLVServices {
 		return page;
 	}
 	
+	static class CostParser {
+		public static double parse(String value){
+			return Double.parseDouble(value.trim().substring(0, value.length()-1).replace(",", "").trim());
+		}
+		
+	}
 	
 }
