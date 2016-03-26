@@ -169,7 +169,7 @@ public class SSLVServices {
 			ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
 
 			if(logger.isInfoEnabled()){
-				logger.info(String.format("Saving post #%s", ad.getId()));
+				logger.info(String.format("Saving post #%s from %s", ad.getId(), ad.getCreated()));
 			}
 			try {
 				HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
