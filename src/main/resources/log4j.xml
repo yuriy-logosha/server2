@@ -6,7 +6,7 @@
 	<appender name="console" class="org.apache.log4j.ConsoleAppender">
 		<param name="Target" value="System.out" />
 		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%date %t: %m%n" />
+			<param name="ConversionPattern" value="%d %t: %m%n" />
 		</layout>
 	</appender>
 
@@ -38,7 +38,7 @@
     <param name="MaxBackupIndex" value="10"/>
     <param name="maximumFileSize" value="1000KB"/>
     <layout class="org.apache.log4j.PatternLayout"> 
-      <param name="ConversionPattern" value="%date %p %t %c - %m%n"/> 
+      <param name="ConversionPattern" value="%d %p %t %c - %m%n"/> 
     </layout> 
   </appender>
 
