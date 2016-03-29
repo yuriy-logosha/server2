@@ -36,8 +36,9 @@
 	  <appender name="R" class="org.apache.log4j.RollingFileAppender"> 
     <param name="file" value="log/console.log"/>
     <param name="MaxBackupIndex" value="10"/>
+    <param name="maximumFileSize" value="1000KB"/>
     <layout class="org.apache.log4j.PatternLayout"> 
-      <param name="ConversionPattern" value="%p %t %c - %m%n"/> 
+      <param name="ConversionPattern" value="%date %p %t %c - %m%n"/> 
     </layout> 
   </appender>
 
