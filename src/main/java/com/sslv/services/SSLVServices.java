@@ -57,12 +57,7 @@ public class SSLVServices {
 		
 		@Override
 		public void run(){
-			try {
-				getPage(type, getPageURI(getSearchPath() + type + "/" + PAGE + index + HTML));
-			} catch (Exception e) {
-				logger.error(e);
-			}
-			
+			getPage(type, getPageURI(getSearchPath() + type + "/" + PAGE + index + HTML));
 		}
 	}
 	
