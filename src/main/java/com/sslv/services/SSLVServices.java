@@ -75,7 +75,7 @@ public class SSLVServices {
 
 	}
 	
-	public AD[] search(String type, String searchCriteria) {
+	public AD[] search(String type) {
 		//Get first page
 		Set<AD> adss = new HashSet<>();
 		parseRootPage(type, getSearchPath() + type + "/page1.html");
@@ -98,6 +98,7 @@ public class SSLVServices {
 		}
 		executor.shutdown();
 		while (!executor.isTerminated()) {
+//			System.out.println(executor.isTerminated());
         }
 		
 	}
@@ -118,7 +119,9 @@ public class SSLVServices {
 			ad.setName(select.attr(ID));
 			ad.setId(Long.parseLong(ad.getName().replace("dm_", "")));
 			
-			Element costEl = root.select("tr#tr_"+ad.getId()+">td:eq(8)").first();
+//			root.select("tr#head_line > td > noindex > a").size()
+			
+			Element costEl = root.select("tr#tr_"+ad.getId()+">td:eq(9)").first();
 			String costStr = concatenateNodes(costEl.childNodes());
 			ad.setCost(CostParser.parse(costStr));
 			ad.setMeasure(StringEscapeUtils.unescapeHtml(costStr.substring(costStr.length() - 1)));
