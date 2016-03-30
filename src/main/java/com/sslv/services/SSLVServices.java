@@ -169,11 +169,11 @@ public class SSLVServices {
 			if(logger.isInfoEnabled()){
 				logger.info(String.format("Saving post #%s from %s", ad.getId(), ad.getCreated()));
 			}
-//			try {
-//				HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
-//			} catch (IOException e) {
-//				logger.error("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), e);
-//			}
+			try {
+				HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
+			} catch (IOException e) {
+				logger.error("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), e);
+			}
 		}
 	}
 	
