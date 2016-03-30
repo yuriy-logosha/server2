@@ -15,7 +15,7 @@ public class ONLINEServices {
 	
 	@GET
 	public Response getList() {
-		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_SELL, "");
+		AD[] adList = services.search(SSLVServices.SEARCH_TYPE_SELL);
 		return Response.status(200).entity(adList).build();
 	}
 	
