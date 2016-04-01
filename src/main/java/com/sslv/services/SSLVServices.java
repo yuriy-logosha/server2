@@ -23,6 +23,10 @@ import org.jsoup.select.Elements;
 import com.sslv.model.AD;
 
 public class SSLVServices {
+	private static final SimpleDateFormat SIMPLE_DATE_FORMAT2 = new SimpleDateFormat("dd.MM.yyyy");
+
+	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+
 	static Logger logger = Logger.getLogger(SSLVServices.class);
 
 	public static final String SEARCH_TYPE_SELL = "sell";
@@ -159,7 +163,7 @@ public class SSLVServices {
 
 			try {
 				Date createdDate = null;
-				createdDate = (new SimpleDateFormat("dd.MM.yyyy HH:mm")).parse(text(eval(date_element)).substring(6));
+				createdDate = SIMPLE_DATE_FORMAT.parse(text(eval(date_element)).substring(6));
 				ad.setCreated(createdDate);
 			} catch (ParseException e) {
 				logger.error("Error parsing creation date.", e);
@@ -167,7 +171,7 @@ public class SSLVServices {
 			ad.setSeries(text(eval(message.select("td[class=ads_opt]").get(6))));
 
 			if(logger.isInfoEnabled()){
-				logger.info(String.format("Saving post #%s from %s", ad.getId(), ad.getCreated()));
+				logger.info(String.format("Saving post #%s from %s", ad.getId(), SIMPLE_DATE_FORMAT2.format(ad.getCreated())));
 			}
 			if(System.getProperty("debug") == null){
 				try {
