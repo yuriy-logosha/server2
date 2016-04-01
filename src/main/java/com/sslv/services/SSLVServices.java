@@ -118,7 +118,6 @@ public class SSLVServices {
 //			root.select("tr#head_line > td > noindex > a").size()
 			
 			Element costEl = root.select("tr#tr_"+ad.getId()+">td").last();
-			root = null;
 			String costStr = concatenateNodes(costEl.childNodes());
 			ad.setCost(CostParser.parse(costStr));
 			ad.setMeasure(StringEscapeUtils.unescapeHtml(costStr.substring(costStr.length() - 1)));
