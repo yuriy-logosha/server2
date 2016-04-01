@@ -52,7 +52,6 @@ public class SSLVServices {
 		public MyThread(String type, int index) {
 			this.index = index;
 			this.type = type;
-			Thread.currentThread().setName("Page"+index);
 		}
 		
 		@Override
@@ -169,10 +168,12 @@ public class SSLVServices {
 			if(logger.isInfoEnabled()){
 				logger.info(String.format("Saving post #%s from %s", ad.getId(), ad.getCreated()));
 			}
-			try {
-				HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
-			} catch (IOException e) {
-				logger.error("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), e);
+			if(System.getProperty("debug") == null){
+				try {
+					HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
+				} catch (IOException e) {
+					logger.error("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), e);
+				}
 			}
 		}
 	}
