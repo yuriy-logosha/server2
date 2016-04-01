@@ -43,8 +43,8 @@
   </appender>
 
 	<!-- Application Loggers -->
-	<logger name="com.sslv.services" additivity="false">
-		<level value="INFO" />
+	<logger name="com.sslv.services.SSLVServices" additivity="false">
+		<level value="DEBUG" />
 		<appender-ref ref="R" />
 	</logger>
 
