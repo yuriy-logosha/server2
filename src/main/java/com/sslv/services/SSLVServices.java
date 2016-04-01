@@ -100,6 +100,7 @@ public class SSLVServices {
 	public void parsePage(String type, Document page){
 		Element root = page.select("form#filter_frm > table[align=center] > tbody").first();
 		Elements childNodes = page.select("tr[id~=^tr_\\d]");
+		page = null;
 		if(logger.isInfoEnabled()){
 			logger.info(String.format("Found %s post(s)", childNodes.size()));
 		}
@@ -111,11 +112,13 @@ public class SSLVServices {
 			Elements select = adBody.select("div > a");
 			ad.setUrl(select.attr(HREF));
 			ad.setName(select.attr(ID));
+			select = null;
 			ad.setId(Long.parseLong(ad.getName().replace("dm_", "")));
 			
 //			root.select("tr#head_line > td > noindex > a").size()
 			
 			Element costEl = root.select("tr#tr_"+ad.getId()+">td").last();
+			root = null;
 			String costStr = concatenateNodes(costEl.childNodes());
 			ad.setCost(CostParser.parse(costStr));
 			ad.setMeasure(StringEscapeUtils.unescapeHtml(costStr.substring(costStr.length() - 1)));
@@ -123,12 +126,11 @@ public class SSLVServices {
 			Elements adInfo = ((Element)node).select("td[class=msga2-o pp6]");
 			
 			//1. Location
-			Element locationNode = adInfo.get(0);
-			Node item = eval(locationNode);
-			String location = text((item instanceof TextNode)?item:eval(item));
+			Node item = eval(adInfo.get(0));
+			ad.setLocation(StringEscapeUtils.unescapeHtml(text((item instanceof TextNode)?item:eval(item))));
 
-			ad.setLocation(StringEscapeUtils.unescapeHtml(location));
-
+			adInfo = null;
+			
 			if(logger.isInfoEnabled()){
 				logger.info(String.format("Requesting post info: %s", ad.getUrl()));
 			}
