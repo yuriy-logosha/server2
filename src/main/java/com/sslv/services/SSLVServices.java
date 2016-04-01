@@ -135,7 +135,7 @@ public class SSLVServices {
 			adInfo = null;
 			
 			if(logger.isInfoEnabled()){
-				logger.info(String.format("Requesting post info: %s", ad.getUrl()));
+				logger.info(String.format("Requesting post %s info: %s", ad.getId(), ad.getUrl()));
 			}
 
 			Document messagePage = getPage(getPageURI(ad.getUrl()));
