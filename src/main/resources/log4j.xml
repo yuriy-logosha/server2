@@ -21,7 +21,7 @@
 
 	<!-- Application Loggers -->
 	<logger name="com.sslv.services">
-		<level value="INFO" />
+		<level value="WARN" />
 		<appender-ref ref="R" />
 	</logger>
 	
