@@ -47,10 +47,6 @@
 		<level value="INFO" />
 		<appender-ref ref="R" />
 	</logger>
-	<logger name="com.sslv.services.SSLVServices">
-		<level value="DEBUG" />
-		<appender-ref ref="R" />
-	</logger>
 
 	<!-- Root Logger -->
 	<root>
