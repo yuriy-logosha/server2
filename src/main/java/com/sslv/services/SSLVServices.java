@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -174,6 +175,12 @@ public class SSLVServices {
 				}
 
 				Document messagePage = getPage(getPageURI2(ad.getUrl()));
+				
+				List<String> photos = new ArrayList<>();
+				for (Element element : messagePage.select("div.pic_dv_thumbnail > a")) {
+					photos.add(element.attr("href"));
+				}
+				ad.setPhotos(photos);
 				tmpElement = messagePage.select("div#msg_div_msg").first();
 				ad.setMessage(StringEscapeUtils.unescapeHtml(concatenateNodes(tmpElement.childNodes()).replace("\r", "").replace("\n", "")));
 

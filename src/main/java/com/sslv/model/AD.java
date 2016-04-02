@@ -2,6 +2,7 @@ package com.sslv.model;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -30,6 +31,7 @@ public class AD {
 	private String map;
 	private StreetAddress address;
 	private String[] coordinates;
+	private List<String> photos;
 	
 	
 	
@@ -233,6 +235,14 @@ public class AD {
 
 	public void setCoordinates(String[] coordinates) {
 		this.coordinates = coordinates;
+	}
+
+	public List<String> getPhotos() {
+		return photos;
+	}
+
+	public void setPhotos(List<String> photos) {
+		this.photos = photos;
 	}
 
 }
