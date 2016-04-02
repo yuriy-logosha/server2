@@ -1,0 +1,32 @@
+
+curl -XPUT http://localhost:9200/sslv -d '{"mappings":{"sell":{"properties":{"addr":{"type":"string"},"address":{"properties":{"address":{"type":"string"},"location":{"type":"geo_point"},"placeId":{"type":"string"}}},"area":{"type":"string"},"buildingType":{"type":"string"},"city":{"type":"string"},"coordinates":{"type":"string"},"cost":{"type":"double"},"costPerM2":{"type":"double"},"created":{"type":"date","format":"epoch_millis"},"floor":{"type":"string"},"id":{"type":"long"},"location":{"type":"string"},"map":{"type":"string"},"measure":{"type":"string"},"message":{"type":"string"},"name":{"type":"string"},"query":{"properties":{"match":{"type":"string"},"match_all":{"type":"object"}}},"rooms":{"type":"long"},"series":{"type":"string"},"square":{"type":"double"},"updated":{"type":"date","format":"epoch_millis"},"url":{"type":"string"}}}}}'
+
+
+curl -XPOST localhost:9200/_aliases -d '
+{
+    "actions": [
+        { "add": {
+            "alias": "sslv",
+            "index": "sslv_v1"
+        }}
+    ]
+}
+'
+
+curl -XPOST localhost:9200/_aliases -d '
+{
+    "actions": [
+        { "remove": {
+            "alias": "my_index",
+            "index": "sslv"
+        }},
+        { "add": {
+            "alias": "my_index",
+            "index": "sslv2"
+        }}
+    ]
+}
+'
+
+
+curl -XPUT localhost:9200/new_index -d '{"mappings":{"sslv":{"addr":{"type":"string"},"area":{"type":"string"},"buildingType":{"type":"string"},"city":{"type":"string"},"coordinates":{"type":"geo_point"},"cost":{"type":"double"},"costPerM2":{"type":"double"},"created":{"type":"date","format":"epoch_millis"},"floor":{"type":"string"},"id":{"type":"long"},"location":{"type":"string"},"map":{"type":"string"},"measure":{"type":"string"},"message":{"type":"string"},"name":{"type":"string"},"query":{"properties":{"match":{"type":"string"},"match_all":{"type":"object"}}},"rooms":{"type":"long"},"series":{"type":"string"},"square":{"type":"double"},"updated":{"type":"date","format":"epoch_millis"},"url":{"type":"string"}}}}'
