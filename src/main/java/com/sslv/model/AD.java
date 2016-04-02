@@ -24,9 +24,14 @@ public class AD {
 	private int rooms;
 	private String city;
 	private String area;
+	private String map;
+	private String[] coordinates;
 	
 	
-	public AD() {
+	public AD(String name, String url) {
+		setName(name);
+		setId(Long.parseLong(name.substring(3)));
+		setUrl(url);
 		setUpdated(new Date());
 	}
 	
@@ -200,6 +205,21 @@ public class AD {
 	public void setArea(String area) {
 		this.area = area;
 	}
-	
-	
+
+	public String getMap() {
+		return map;
+	}
+
+	public void setMap(String map) {
+		this.map = map;
+	}
+
+	public String[] getCoordinates() {
+		return coordinates;
+	}
+
+	public void setCoordinates(String[] coordinates) {
+		this.coordinates = coordinates;
+	}
+
 }
