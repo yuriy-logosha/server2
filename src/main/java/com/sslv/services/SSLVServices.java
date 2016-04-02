@@ -185,7 +185,7 @@ public class SSLVServices {
 				ad.setAddr(tmpElement.select("td#tdo_11").text().replace("[Карта]", "").trim());
 				
 				tmpString = tmpElement.select("td#tdo_11 > span.td15 > a.ads_opt_link_map").attr("onclick").split(";")[0];
-				ad.setMap(tmpString.substring(15, tmpString.length()-2));
+				ad.setMap(DOMAIN + tmpString.substring(15, tmpString.length()-2));
 				tmpString = null;
 				
 				ad.setCoordinates(ad.getMap().split("=")[3].split(","));
