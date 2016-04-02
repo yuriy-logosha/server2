@@ -3,6 +3,7 @@ package com.sslv.services;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -14,12 +15,15 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.sslv.model.AD;
 
 public class SSLVServices {
@@ -136,7 +140,9 @@ public class SSLVServices {
 				//4. Rooms
 				try {
 					tmpString = concatenateNodes(extract(infoTable.get(1)));
-					ad.setRooms(Integer.parseInt(tmpString));
+					if(!"-".equals(tmpString)){
+						ad.setRooms(Integer.parseInt(tmpString));
+					}
 				} catch (Exception e) {
 					logger.debug("Can't parse number of rooms.", e);
 				}
@@ -164,7 +170,7 @@ public class SSLVServices {
 				tmpString = null;
 				
 				if(logger.isInfoEnabled()){
-					logger.info(String.format("%s GET info: %s", ad.getId(), ad.getUrl()));
+					logger.info(String.format("%s < GET %s", ad.getId(), ad.getUrl()));
 				}
 
 				Document messagePage = getPage(getPageURI2(ad.getUrl()));
@@ -184,31 +190,44 @@ public class SSLVServices {
 				ad.setArea(tmpElement.select("td#tdo_856").text());
 				ad.setAddr(tmpElement.select("td#tdo_11").text().replace("[Карта]", "").trim());
 				
-				tmpString = tmpElement.select("td#tdo_11 > span.td15 > a.ads_opt_link_map").attr("onclick").split(";")[0];
-				ad.setMap(DOMAIN + tmpString.substring(15, tmpString.length()-2));
-				tmpString = null;
-				
-				ad.setCoordinates(ad.getMap().split("=")[3].split(","));
+				// Map
+				try {
+					Elements select = tmpElement.select("td#tdo_11 > span.td15 > a.ads_opt_link_map");
+					if(select != null && !select.isEmpty()){
+						tmpString = select.attr("onclick").split(";")[0];
+						ad.setMap(DOMAIN + tmpString.substring(15, tmpString.length()-2));
+//						StreetAddress street = getGoogleMapInfo(ad.getMap().split("=")[3].split(","));
+//						ad.setAddress(street);
+						ad.setCoordinates(ad.getMap().split("=")[3].split(","));
+					}
+				} catch (Exception e) {
+					logger.debug("", e);
+				} finally {
+					tmpString = null;
+				}
 				
 				Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
 
 				try {
 					Date createdDate = null;
-					createdDate = SIMPLE_DATE_FORMAT.parse(text(eval(date_element)).substring(6));
+					tmpString = text(eval(date_element)).substring(6);
+					createdDate = SIMPLE_DATE_FORMAT.parse(tmpString);
 					ad.setCreated(createdDate);
 				} catch (ParseException | NumberFormatException e) {
-					logger.error("Error parsing creation date.", e);
+					logger.error(String.format("Error parsing creation date from %s.", tmpString), e);
+				} finally {
+					tmpString = null;
 				}
 				ad.setSeries(text(eval(tmpElement.select("td[class=ads_opt]").get(6))));
 
 				if(logger.isInfoEnabled()){
-					logger.info(String.format("%s save", ad.getId()));
+					logger.info(String.format("%s > save", ad.getId()));
 				}
 				if(System.getProperty("debug") == null){
 					try {
 						HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
 					} catch (IOException e) {
-						logger.error("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), e);
+						logger.error(String.format("%s saving error. %s", ad.getId(), ad), e);
 					}
 				}				
 			} catch (Exception e) {
@@ -218,6 +237,35 @@ public class SSLVServices {
 		}
 	}
 	
+	private StreetAddress getGoogleMapInfo(String[] coords) {
+		JSONObject response = null;
+		try {
+			response = JsonReader.read("http://maps.googleapis.com/maps/api/geocode/json?latlng="+URLEncoder.encode(coords[0], "utf-8")+","+URLEncoder.encode(coords[1], "utf-8"));
+			while ("OVER_QUERY_LIMIT".equals(response.getString("status"))) {
+				try {
+					Thread.currentThread().sleep(999);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				response = JsonReader.read("http://maps.googleapis.com/maps/api/geocode/json?latlng="+URLEncoder.encode(coords[0], "utf-8")+","+URLEncoder.encode(coords[1], "utf-8"));
+			}
+			JSONObject location = response.getJSONArray("results").getJSONObject(0);
+			location = location.getJSONObject("geometry");
+			location = location.getJSONObject("location");
+			final double lng = location.getDouble("lng");
+			final double lat = location.getDouble("lat");
+			StreetAddress sa = new StreetAddress();
+			sa.setPlaceId(response.getJSONArray("results").getJSONObject(0).getString("place_id"));
+			sa.setAddress(response.getJSONArray("results").getJSONObject(0).getString("formatted_address"));
+			sa.setLocation(new double[]{lat, lng});
+			return sa;
+		} catch (IOException | JSONException e) {
+			logger.debug(response.toString(), e);
+		}
+		return null;
+	}
+
 	private Node eval2(Element element) {
 		return element.select(":last-child").first();
 	}

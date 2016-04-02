@@ -1,8 +1,11 @@
 package com.sslv.model;
 
+import java.util.Arrays;
 import java.util.Date;
 
 import javax.xml.bind.annotation.XmlRootElement;
+
+import com.sslv.services.StreetAddress;
 
 @XmlRootElement
 public class AD {
@@ -25,7 +28,9 @@ public class AD {
 	private String city;
 	private String area;
 	private String map;
+	private StreetAddress address;
 	private String[] coordinates;
+	
 	
 	
 	public AD(String name, String url) {
@@ -61,7 +66,7 @@ public class AD {
 	
 	@Override
 	public String toString() {
-		return "AD [id=" + id + ", url=" + url + ", cost=" + cost + ", location=" + location + "]";
+		return "AD [id=" + id + ", url=" + url + ", cost=" + cost + ", location=" + location + ", map=" + map + "]";
 	}
 
 	public long getId() {
@@ -212,6 +217,14 @@ public class AD {
 
 	public void setMap(String map) {
 		this.map = map;
+	}
+
+	public StreetAddress getAddress() {
+		return address;
+	}
+
+	public void setAddress(StreetAddress address) {
+		this.address = address;
 	}
 
 	public String[] getCoordinates() {
