@@ -35,10 +35,7 @@ public class AD {
 	
 	
 	
-	public AD(String name, String url) {
-		setName(name);
-		setId(Long.parseLong(name.substring(3)));
-		setUrl(url);
+	public AD() {
 		setUpdated(new Date());
 	}
 	

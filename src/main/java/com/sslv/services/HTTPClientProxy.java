@@ -205,7 +205,7 @@ public class HTTPClientProxy {
                     response = httpclient.execute(httpget, context);
                     condition = false;
     			} catch (Exception e) {
-    				logger.error(httpget.getURI().toURL().toString(), e);
+    				logger.debug(String.format("Connection timeout. Retry in %s sec. %s ", 1, httpget.getURI().toURL().toString()));
     				Thread.sleep(1000);
     				tryCounter++;
     			}

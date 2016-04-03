@@ -8,9 +8,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,7 +22,6 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.sslv.model.AD;
 
 public class SSLVServices {
@@ -52,7 +49,7 @@ public class SSLVServices {
 	private static final String DB_PROVIDER = "127.0.0.1:9200";
 	private static final String REPOSITORY = "sslv";
 
-	class MyThread extends Thread {
+	public final class MyThread extends Thread {
 		
 		int index;
 		
@@ -69,26 +66,19 @@ public class SSLVServices {
 		}
 	}
 	
-	private String getSearchPath(){
-		String property = System.getProperty("scope");
-		String scope = (property == null)?"all":property; 
-		property = System.getProperty("location");
-		String location = (property == null)?"riga":property; 
-		return String.format(SEARCH_PATH, location, scope);
+	public static String getSearchPath(){
+		return String.format(
+				SEARCH_PATH, 
+				(System.getProperty("location") == null)?"riga":System.getProperty("location"), 
+						(System.getProperty("scope") == null)?"all":System.getProperty("scope"));
 
 	}
 	
 	public AD[] search(String type) {
 		//Get first page
-		Set<AD> adss = new HashSet<>();
-		parseRootPage(type, getSearchPath() + type + "/page1.html");
-
-		return adss.toArray(new AD[0]);
-	}
-
-	public void parseRootPage(String type, String url){
-		Document first = getPage(getPageURI(url));
-		int max = getMaxPageNumber(first.select("a[name=nav_id]"));
+		String url = getSearchPath() + type + "/page1.html";
+		Document firstPage = getPage(getPageURI(url));
+		int max = getMaxPageNumber(firstPage.select("a[name=nav_id]"));
 		if(logger.isInfoEnabled()){
 			logger.info(String.format("Found %s page(s)", max));
 		}
@@ -101,13 +91,14 @@ public class SSLVServices {
 		}
 		executor.shutdown();
 		while (!executor.isTerminated()) {
-//			System.out.println(executor.isTerminated());
         }
+
+		return new AD[0];
 		
 	}
 
-	public void parsePage(String type, Document page){
-		Element root = page.select("form#filter_frm > table[align=center] > tbody").first();
+	public static void parsePage(String type, Document page){
+//		Element root = page.select("form#filter_frm > table[align=center] > tbody").first();
 		Elements childNodes = page.select("tr[id~=^tr_\\d]");
 		page = null;
 		if(logger.isInfoEnabled()){
@@ -119,10 +110,16 @@ public class SSLVServices {
 		String tmpString = null;
 		
 		for (Element node : childNodes) {
-			String name = node.attr("id");
 			String id = node.attr("id").substring(3);
 			try {
-				AD ad = new AD(name, DOMAIN + node.select("td[class=msg2] > div > a").attr(HREF));
+				AD ad = new AD();
+				
+				ad.setId(Long.parseLong(id));
+				
+				tmpNode = node.select("a.am").first();
+				ad.setName(text(eval(tmpNode)));
+				
+				ad.setUrl(DOMAIN + tmpNode.attr(HREF));
 				
 				infoTable = node.select("td[class=msga2-o pp6]");
 				
@@ -145,7 +142,7 @@ public class SSLVServices {
 						ad.setRooms(Integer.parseInt(tmpString));
 					}
 				} catch (Exception e) {
-					logger.debug("Can't parse number of rooms.", e);
+					logger.error("Can't parse number of rooms.", e);
 				}
 				
 				//5. Square
@@ -153,7 +150,7 @@ public class SSLVServices {
 					tmpString = concatenateNodes(extract(infoTable.get(2)));
 					ad.setSquare(Double.parseDouble(tmpString));
 				} catch (ClassCastException e) {
-					logger.debug("Can't parse square.", e);
+					logger.error("Can't parse square.", e);
 				}
 
 				//6. Floor
@@ -161,7 +158,7 @@ public class SSLVServices {
 					tmpString = concatenateNodes(extract(infoTable.get(3)));
 					ad.setFloor(tmpString);
 				} catch (ClassCastException e) {
-					logger.debug("Can't parse number of floors.", e);
+					logger.error("Can't parse number of floors.", e);
 				}
 				
 				
@@ -175,58 +172,52 @@ public class SSLVServices {
 				}
 
 				Document messagePage = getPage(getPageURI2(ad.getUrl()));
+				if(messagePage != null){
 				
-				List<String> photos = new ArrayList<>();
-				for (Element element : messagePage.select("div.pic_dv_thumbnail > a")) {
-					photos.add(element.attr("href"));
-				}
-				ad.setPhotos(photos);
-				tmpElement = messagePage.select("div#msg_div_msg").first();
-				ad.setMessage(StringEscapeUtils.unescapeHtml(concatenateNodes(tmpElement.childNodes()).replace("\r", "").replace("\n", "")));
-
-//				String rooms = tmpElement.select("td#tdo_1").text();
-//				if(!"-".equals(rooms)){
-//					ad.setRooms(Integer.parseInt(rooms));
-//				}
-//				ad.setSquare(Double.parseDouble(tmpElement.select("td#tdo_3").text()));
-					
-//				ad.setFloor(tmpElement.select("td#tdo_4").text());
-				ad.setSeries(tmpElement.select("td#tdo_6").text());
-				ad.setBuildingType(tmpElement.select("td#tdo_2").text());
-				ad.setCity(tmpElement.select("td#tdo_20").text());
-				ad.setArea(tmpElement.select("td#tdo_856").text());
-				ad.setAddr(tmpElement.select("td#tdo_11").text().replace("[Карта]", "").trim());
-				
-				// Map
-				try {
-					Elements select = tmpElement.select("td#tdo_11 > span.td15 > a.ads_opt_link_map");
-					if(select != null && !select.isEmpty()){
-						tmpString = select.attr("onclick").split(";")[0];
-						ad.setMap(DOMAIN + tmpString.substring(15, tmpString.length()-2));
-//						StreetAddress street = getGoogleMapInfo(ad.getMap().split("=")[3].split(","));
-//						ad.setAddress(street);
-						ad.setCoordinates(ad.getMap().split("=")[3].split(","));
+					List<String> photos = new ArrayList<>();
+					for (Element element : messagePage.select("div.pic_dv_thumbnail > a")) {
+						photos.add(element.attr("href"));
 					}
-				} catch (Exception e) {
-					logger.debug("", e);
-				} finally {
-					tmpString = null;
+					ad.setPhotos(photos);
+					tmpElement = messagePage.select("div#msg_div_msg").first();
+					ad.setMessage(StringEscapeUtils.unescapeHtml(concatenateNodes(tmpElement.childNodes()).replace("\r", "").replace("\n", "")));
+					ad.setSeries(tmpElement.select("td#tdo_6").text());
+					ad.setBuildingType(tmpElement.select("td#tdo_2").text());
+					ad.setCity(tmpElement.select("td#tdo_20").text());
+					ad.setArea(tmpElement.select("td#tdo_856").text());
+					ad.setAddr(tmpElement.select("td#tdo_11").text().replace("[Карта]", "").trim());
+
+					// Map
+					try {
+						Elements select = tmpElement.select("td#tdo_11 > span.td15 > a.ads_opt_link_map");
+						if(select != null && !select.isEmpty()){
+							tmpString = select.attr("onclick").split(";")[0];
+							ad.setMap(DOMAIN + tmpString.substring(15, tmpString.length()-2));
+//							StreetAddress street = getGoogleMapInfo(ad.getMap().split("=")[3].split(","));
+//							ad.setAddress(street);
+							ad.setCoordinates(ad.getMap().split("=")[3].split(","));
+						}
+					} catch (Exception e) {
+						logger.error("", e);
+					} finally {
+						tmpString = null;
+					}
+				
+					//Creation date
+					try {
+						Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
+						tmpString = text(eval(date_element)).substring(6);
+//						if(logger.isDebugEnabled())
+//							logger.debug(String.format("%s parsing creation date %s.", id, tmpString));
+						ad.setCreated((new SimpleDateFormat("dd.MM.yyyy HH:mm")).parse(tmpString));
+					} catch (ParseException | NumberFormatException e) {
+						logger.error(String.format("%s Error parsing creation date %s.", id, tmpString), e);
+					} finally {
+						tmpString = null;
+					}
+					ad.setSeries(text(eval(tmpElement.select("td[class=ads_opt]").get(6))));				
 				}
 				
-				Element date_element = messagePage.select("table#page_main > tbody > tr:eq(1) > td > table > tbody > tr:eq(1) > td:eq(1)").first();
-
-				try {
-					Date createdDate = null;
-					tmpString = text(eval(date_element)).substring(6);
-					createdDate = SIMPLE_DATE_FORMAT.parse(tmpString);
-					ad.setCreated(createdDate);
-				} catch (ParseException | NumberFormatException e) {
-					logger.error(String.format("Error parsing creation date from %s.", tmpString), e);
-				} finally {
-					tmpString = null;
-				}
-				ad.setSeries(text(eval(tmpElement.select("td[class=ads_opt]").get(6))));
-
 				if(logger.isInfoEnabled()){
 					logger.info(String.format("%s > save", ad.getId()));
 				}
@@ -244,13 +235,13 @@ public class SSLVServices {
 		}
 	}
 	
-	private StreetAddress getGoogleMapInfo(String[] coords) {
+	public static StreetAddress getGoogleMapInfo(String[] coords) {
 		JSONObject response = null;
 		try {
 			response = JsonReader.read("http://maps.googleapis.com/maps/api/geocode/json?latlng="+URLEncoder.encode(coords[0], "utf-8")+","+URLEncoder.encode(coords[1], "utf-8"));
 			while ("OVER_QUERY_LIMIT".equals(response.getString("status"))) {
 				try {
-					Thread.currentThread().sleep(999);
+					Thread.sleep(999);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -273,7 +264,7 @@ public class SSLVServices {
 		return null;
 	}
 
-	private Node eval2(Element element) {
+	public static Node eval2(Element element) {
 		return element.select(":last-child").first();
 	}
 
@@ -281,22 +272,30 @@ public class SSLVServices {
 //		return select.select(":last-child");
 //	}
 
-	private List<Node> extract (Node node){
+	public static List<Node> extract (Node node){
 		return node.childNodes();
 	}
 
-	private static Node eval (Node node){
+	public static Node eval (Node node){
 		if(node == null || node.childNodeSize() == 0){
 			return null;
 		}
 		return node.childNode(0);
 	}
 	
-	private static String text (Node node){
-		return ((TextNode) node).getWholeText();
+	public static String text (Node node){
+		try {
+			if(node.childNodeSize() > 0){
+				return ((TextNode) eval(node)).getWholeText();
+			} else
+				return ((TextNode) node).getWholeText();
+		} catch (ClassCastException e) {
+			logger.debug(String.format("Exception occured while parsing %s", node.nodeName()), e);
+		}
+		return null;
 	}
 
-	public String concatenateNodes(List<Node> nodes){
+	public static String concatenateNodes(List<Node> nodes){
 		StringBuffer sb = new StringBuffer();
 		for (Node node : nodes) {
 			if(node instanceof TextNode){
@@ -329,7 +328,7 @@ public class SSLVServices {
 		return 1;
 	}
 
-	public URI getPageURI(String path){
+	public static URI getPageURI(String path){
     	URI uri = null;
 		try {
 			uri = HTTPClientProxy.getURIBuilder(DOMAIN).setPath(path).build();
@@ -339,7 +338,7 @@ public class SSLVServices {
 		return uri;
 	}
 
-	public URI getPageURI2(String pathWithDomain){
+	public static URI getPageURI2(String pathWithDomain){
     	URI uri = null;
 		try {
 			uri = HTTPClientProxy.getURIBuilder(pathWithDomain).build();
@@ -350,7 +349,7 @@ public class SSLVServices {
 	}
 	
 	
-	private Document getPage(String type, URI uri){
+	public Document getPage(String type, URI uri){
 		Document page = null;
 		if(logger.isInfoEnabled()){
 			logger.info(String.format("Requesting page %s", uri.getRawPath()));
@@ -363,7 +362,7 @@ public class SSLVServices {
 		return page;
 	}
 
-	private Document getPage(URI uri){
+	public static Document getPage(URI uri){
 		Document page = null;
 		try {
 			page = HTTPClientProxy.execute(uri);
@@ -373,7 +372,7 @@ public class SSLVServices {
 		return page;
 	}
 	
-	static class CostParser {
+	public static class CostParser {
 		public static double parse(String value){
 			return Double.parseDouble(value.trim().substring(0, value.length()-1).replace(",", "").trim());
 		}
