@@ -199,16 +199,18 @@ public class HTTPClientProxy {
 
             CloseableHttpResponse response = null;
             boolean condition = true;
-            do {
+            int tryCounter = 1;
+			do {
                 try {
                     response = httpclient.execute(httpget, context);
                     condition = false;
     			} catch (Exception e) {
     				logger.error(httpget.getURI().toURL().toString(), e);
-    				Thread.sleep(5000);
+    				Thread.sleep(1000);
+    				tryCounter++;
     			}
 				
-			} while (condition);
+			} while (condition && tryCounter > 10);
             try {
                 HttpEntity entity = response.getEntity();
 
