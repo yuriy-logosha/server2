@@ -211,8 +211,10 @@ public class HTTPClientProxy {
     			}
 				
 			} while (condition && tryCounter > 10);
+        	if(response != null)
             try {
-                HttpEntity entity = response.getEntity();
+            	HttpEntity entity = null;
+        		entity = response.getEntity();
 
                 if(logger.isDebugEnabled()){
                 	logger.debug(response.getStatusLine() + " - " + httpget.getURI());
@@ -228,6 +230,7 @@ public class HTTPClientProxy {
                         }
                         
                         resp = baos.toString(StandardCharsets.UTF_8.name());
+                        return Jsoup.parse(resp, uri.getHost());
 						
 					} finally {
 						is.close();
@@ -261,11 +264,9 @@ public class HTTPClientProxy {
             httpclient.close();
         }
 		
-        Document d = 
-        		Jsoup.parse(resp, uri.getHost());
         
 //        Jsoup.parse(new URL(uri).openStream(), "ISO-8859-1", uri);
-		return d;
+		return null;
 	}
 
 	private static void validate(String method) {

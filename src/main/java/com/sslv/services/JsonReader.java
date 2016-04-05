@@ -5,11 +5,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 public class JsonReader {
 
@@ -29,6 +32,18 @@ public class JsonReader {
             final String jsonText = readAll(rd);
             final JSONObject json = new JSONObject(jsonText);
             return json;
+        } finally {
+            is.close();
+        }
+    }
+
+    public static Document read2(final URL uri) throws IOException {
+        final InputStream is = uri.openStream();
+        try {
+            final BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            final String text = readAll(rd);
+            final Document d = Jsoup.parse(text);
+            return d;
         } finally {
             is.close();
         }

@@ -1,8 +1,10 @@
 package com.sslv.services;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -16,6 +18,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -62,7 +65,8 @@ public class SSLVServices {
 		
 		@Override
 		public void run(){
-			getPage(type, getPageURI(getSearchPath() + type + "/" + PAGE + index + HTML));
+			getPage(type, DOMAIN + getSearchPath() + type + "/" + PAGE + index + HTML);
+//			System.gc();
 		}
 	}
 	
@@ -76,8 +80,8 @@ public class SSLVServices {
 	
 	public AD[] search(String type) {
 		//Get first page
-		String url = getSearchPath() + type + "/page1.html";
-		Document firstPage = getPage(getPageURI(url));
+		String url = DOMAIN + getSearchPath() + type + "/page1.html";
+		Document firstPage = getPage(url);
 		int max = getMaxPageNumber(firstPage.select("a[name=nav_id]"));
 		if(logger.isInfoEnabled()){
 			logger.info(String.format("Found %s page(s)", max));
@@ -111,6 +115,15 @@ public class SSLVServices {
 		
 		for (Element node : childNodes) {
 			String id = node.attr("id").substring(3);
+//			String[] split = node.select("img.isfoto").attr("src").split("/");
+//			String id_internal = "";
+//			try {
+//				id_internal = split[6];
+//				
+//			} catch (Exception e) {
+//				logger.debug("", e);
+//			}
+//			String id_photo_name = split[7].substring(0, split[7].length()-8);
 			try {
 				AD ad = new AD();
 				
@@ -171,7 +184,7 @@ public class SSLVServices {
 					logger.info(String.format("%s < GET %s", ad.getId(), ad.getUrl()));
 				}
 
-				Document messagePage = getPage(getPageURI2(ad.getUrl()));
+				Document messagePage = getPage(ad.getUrl());
 				if(messagePage != null){
 				
 					List<String> photos = new ArrayList<>();
@@ -223,13 +236,15 @@ public class SSLVServices {
 				}
 				if(System.getProperty("debug") == null){
 					try {
-						HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + ad.getId(), ad);
+						HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + id, ad);
 					} catch (IOException e) {
 						logger.error(String.format("%s saving error. %s", ad.getId(), ad), e);
 					}
 				}				
 			} catch (Exception e) {
 				logger.error(String.format("Exception while parsing post %s.", id), e);
+			} finally {
+//				System.gc();
 			}
 
 		}
@@ -348,29 +363,52 @@ public class SSLVServices {
 		return uri;
 	}
 	
+	public static URL getPageURL(final String path){
+    	URL url = null;
+		try {
+			url = new URL("http://" + DOMAIN + path);
+		} catch (MalformedURLException e) {
+			logger.error("", e);
+		}
+		return url;
+	}
 	
-	public Document getPage(String type, URI uri){
+	public Document getPage(String type, String url){
 		Document page = null;
 		if(logger.isInfoEnabled()){
-			logger.info(String.format("Requesting page %s", uri.getRawPath()));
+			logger.info(String.format("Requesting page %s", url));
 		}
-		page = getPage(uri);
+		page = getPage(url);
 		if(logger.isInfoEnabled()){
-			logger.info(String.format("Page received. Parsing %s", uri.getRawPath()));
+			logger.info(String.format("Page received. Parsing %s", url));
 		}
 		parsePage(type, page);
 		return page;
 	}
 
-	public static Document getPage(URI uri){
+	public static Document getPage(String url){
 		Document page = null;
 		try {
-			page = HTTPClientProxy.execute(uri);
+			page = HTTPClientProxy.execute(new URI("http://" + url));
 		} catch (Exception e) {
-			logger.error(e);
+			logger.error(url, e);
 		}
+		
+//		try {
+//			page = JsonReader.read2(url);
+//		} catch (IOException e) {
+//			logger.error("", e);
+//		}
+		
+//		try {
+//			page = Jsoup.connect("http://" + url).userAgent("Mozilla").get();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+
 		return page;
 	}
+	
 	
 	public static class CostParser {
 		public static double parse(String value){
