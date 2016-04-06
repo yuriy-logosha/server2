@@ -65,7 +65,7 @@ public class SSLVLauncher {
 			}
 		}
 
-		return 1;
+		return 0;
 	}
 	
 }
