@@ -4,6 +4,7 @@
 	<groupId>sslv</groupId>
 	<artifactId>sslv</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 	<build>
 		<plugins>
 			<plugin>
@@ -24,15 +25,43 @@
 					<compilerArgument>-Xlint:all</compilerArgument>
 					<showWarnings>true</showWarnings>
 					<showDeprecation>true</showDeprecation>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
 					<archive>
 						<manifest>
-							<addClasspath>true</addClasspath>
-							<classpathPrefix>lib/</classpathPrefix>
 							<mainClass>com.sslv.SSLVLauncher</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
 			</plugin>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.sslv.SSLVLauncher</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 	<dependencies>
@@ -74,7 +103,6 @@
 					<artifactId>jmxri</artifactId>
 				</exclusion>
 			</exclusions>
-			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -103,8 +131,9 @@
 		</dependency>
 
 	</dependencies>
-  <scm>
-  	<url>https://github.com/yuriy-logosha/sslvParser.git</url>
-  	<developerConnection>Iurii Logosha</developerConnection>
-  </scm>
+	<scm>
+		<url>https://github.com/yuriy-logosha/sslvParser.git</url>
+		<developerConnection>Iurii Logosha</developerConnection>
+	</scm>
+	<name>SSLVParser</name>
 </project>
