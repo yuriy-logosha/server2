@@ -1,24 +1,17 @@
 package com.sslv.services;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -27,84 +20,29 @@ import org.jsoup.select.Elements;
 
 import com.sslv.model.AD;
 
-public class SSLVServices {
-	private static final SimpleDateFormat SIMPLE_DATE_FORMAT2 = new SimpleDateFormat("dd.MM.yyyy");
+import common.Constants;
 
-	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy HH:mm");
+public class SSLVPageParser implements Runnable {
 
-	static Logger logger = Logger.getLogger(SSLVServices.class);
+	final static Logger logger = Logger.getLogger(SSLVPageParser.class);
 
-	public static final String SEARCH_TYPE_SELL = "sell";
-	public static final String SEARCH_TYPE_RENT = "hand_over";
-	public static final String SEARCH_TYPE_BUY  = "buy";
-	
-	private static final String PAGE = "page";
-	private static final String HTML = ".html";
 	private static final String ID = "id";
-	private static final String HREF = "href";
-	private static final String PAGE_MAIN = "page_main";
 	private static final String DOMAIN = "www.ss.lv";
-	
-	private static final String SEARCH_PATH = "/ru/real-estate/flats/%s/%s/";
-	private static final String SEARCH_QUERY_VAR_NAME = "q";
-	
 	
 	private static final String DB_PROVIDER = "127.0.0.1:9200";
 	private static final String REPOSITORY = "sslv";
 
-	public final class MyThread extends Thread {
-		
-		int index;
-		
-		String type;
-		
-		public MyThread(String type, int index) {
-			this.index = index;
-			this.type = type;
-		}
-		
-		@Override
-		public void run(){
-			getPage(type, DOMAIN + getSearchPath() + type + "/" + PAGE + index + HTML);
-//			System.gc();
-		}
+	private final String type;
+
+	private final String url;
+
+	public SSLVPageParser(final String type, final String url) {
+		this.type = type;
+		this.url = url;
 	}
 	
-	public static String getSearchPath(){
-		return String.format(
-				SEARCH_PATH, 
-				(System.getProperty("location") == null)?"riga":System.getProperty("location"), 
-						(System.getProperty("scope") == null)?"all":System.getProperty("scope"));
-
-	}
-	
-	public AD[] search(String type) {
-		//Get first page
-		String url = DOMAIN + getSearchPath() + type + "/page1.html";
-		Document firstPage = getPage(url);
-		int max = getMaxPageNumber(firstPage.select("a[name=nav_id]"));
-		if(logger.isInfoEnabled()){
-			logger.info(String.format("Found %s page(s)", max));
-		}
-
-		String property = System.getProperty("threads");
-		ExecutorService executor = Executors.newFixedThreadPool((property!= null)?Integer.valueOf(property):10);
-		for(int i = 0; i < max; i++){
-			MyThread t = new MyThread(type, i+1);
-			executor.execute(t);
-		}
-		executor.shutdown();
-		while (!executor.isTerminated()) {
-        }
-
-		return new AD[0];
-		
-	}
-
-	public static void parsePage(String type, Document page){
-//		Element root = page.select("form#filter_frm > table[align=center] > tbody").first();
+	public void parsePage(final String type, final Document page){
 		Elements childNodes = page.select("tr[id~=^tr_\\d]");
-		page = null;
 		if(logger.isInfoEnabled()){
 			logger.info(String.format("Found %s post(s)", childNodes.size()));
 		}
@@ -114,16 +52,7 @@ public class SSLVServices {
 		String tmpString = null;
 		
 		for (Element node : childNodes) {
-			String id = node.attr("id").substring(3);
-//			String[] split = node.select("img.isfoto").attr("src").split("/");
-//			String id_internal = "";
-//			try {
-//				id_internal = split[6];
-//				
-//			} catch (Exception e) {
-//				logger.debug("", e);
-//			}
-//			String id_photo_name = split[7].substring(0, split[7].length()-8);
+			String id = node.attr(ID).substring(3);
 			try {
 				AD ad = new AD();
 				
@@ -132,14 +61,15 @@ public class SSLVServices {
 				tmpNode = node.select("a.am").first();
 				ad.setName(text(eval(tmpNode)));
 				
-				ad.setUrl(DOMAIN + tmpNode.attr(HREF));
+				ad.setUrl(DOMAIN + tmpNode.attr(Constants.HREF));
 				
 				infoTable = node.select("td[class=msga2-o pp6]");
 				
 				//1. Cost
 				tmpElement = infoTable.last();
 				tmpString = concatenateNodes(tmpElement.childNodes());
-				ad.setCost(CostParser.parse(tmpString));
+				CostParser cp = new CostParser();
+				ad.setCost(cp.parse(tmpString));
 				
 				//2. Measure
 				ad.setMeasure(StringEscapeUtils.unescapeHtml(tmpString.substring(tmpString.length() - 1)));
@@ -198,7 +128,8 @@ public class SSLVServices {
 					ad.setBuildingType(tmpElement.select("td#tdo_2").text());
 					ad.setCity(tmpElement.select("td#tdo_20").text());
 					ad.setArea(tmpElement.select("td#tdo_856").text());
-					ad.setAddr(tmpElement.select("td#tdo_11").text().replace("[Карта]", "").trim());
+					tmpString = tmpElement.select("td#tdo_11").text();
+					ad.setAddr(tmpString.substring(0, tmpString.length()-8));
 
 					// Map
 					try {
@@ -243,14 +174,12 @@ public class SSLVServices {
 				}				
 			} catch (Exception e) {
 				logger.error(String.format("Exception while parsing post %s.", id), e);
-			} finally {
-//				System.gc();
 			}
 
 		}
 	}
 	
-	public static StreetAddress getGoogleMapInfo(String[] coords) {
+	public StreetAddress getGoogleMapInfo(String[] coords) {
 		JSONObject response = null;
 		try {
 			response = JsonReader.read("http://maps.googleapis.com/maps/api/geocode/json?latlng="+URLEncoder.encode(coords[0], "utf-8")+","+URLEncoder.encode(coords[1], "utf-8"));
@@ -274,43 +203,35 @@ public class SSLVServices {
 			sa.setLocation(new double[]{lat, lng});
 			return sa;
 		} catch (IOException | JSONException e) {
-			logger.debug(response.toString(), e);
+			logger.error(response.toString(), e);
 		}
 		return null;
 	}
 
-	public static Node eval2(Element element) {
-		return element.select(":last-child").first();
-	}
-
-//	private Node eval2(Element select) {
-//		return select.select(":last-child");
-//	}
-
-	public static List<Node> extract (Node node){
+	public List<Node> extract (Node node){
 		return node.childNodes();
 	}
 
-	public static Node eval (Node node){
+	public Node eval (Node node){
 		if(node == null || node.childNodeSize() == 0){
 			return null;
 		}
 		return node.childNode(0);
 	}
 	
-	public static String text (Node node){
+	public String text (Node node){
 		try {
 			if(node.childNodeSize() > 0){
 				return ((TextNode) eval(node)).getWholeText();
 			} else
 				return ((TextNode) node).getWholeText();
 		} catch (ClassCastException e) {
-			logger.debug(String.format("Exception occured while parsing %s", node.nodeName()), e);
+			logger.error(String.format("Exception occured while parsing %s", node.nodeName()), e);
 		}
 		return null;
 	}
 
-	public static String concatenateNodes(List<Node> nodes){
+	public String concatenateNodes(List<Node> nodes){
 		StringBuffer sb = new StringBuffer();
 		for (Node node : nodes) {
 			if(node instanceof TextNode){
@@ -323,98 +244,71 @@ public class SSLVServices {
 		return sb.toString();
 	}
 
-	private static int getMaxPageNumber(Elements pagesNodes) {
-		for (Node node : pagesNodes) {
-			if(node instanceof Element && ((Element) node).tagName().equalsIgnoreCase("a") && node.attr("name").equalsIgnoreCase("nav_id") && node.attr("rel").equalsIgnoreCase("prev")){
-				try {
-					String href = node.attr(HREF);
-					String[] path = href.split("/");
-					String lastWord = path[path.length-1];
-					
-					String result = lastWord.split(HTML)[0].replace(PAGE, "");
-					int val = Integer.parseInt(result);
-					return val;
-				} catch (Exception e) {
-					logger.error(e);
-				}
-			}
-		}
+//	public static URI getPageURI(String path){
+//    	URI uri = null;
+//		try {
+//			uri = HTTPClientProxy.getURIBuilder(DOMAIN).setPath(path).build();
+//		} catch (URISyntaxException e) {
+//			logger.error(e);
+//		}
+//		return uri;
+//	}
 
-		return 1;
-	}
-
-	public static URI getPageURI(String path){
-    	URI uri = null;
-		try {
-			uri = HTTPClientProxy.getURIBuilder(DOMAIN).setPath(path).build();
-		} catch (URISyntaxException e) {
-			logger.error(e);
-		}
-		return uri;
-	}
-
-	public static URI getPageURI2(String pathWithDomain){
-    	URI uri = null;
-		try {
-			uri = HTTPClientProxy.getURIBuilder(pathWithDomain).build();
-		} catch (URISyntaxException e) {
-			logger.error(e);
-		}
-		return uri;
-	}
+//	public static URI getPageURI2(String pathWithDomain){
+//    	URI uri = null;
+//		try {
+//			uri = HTTPClientProxy.getURIBuilder(pathWithDomain).build();
+//		} catch (URISyntaxException e) {
+//			logger.error(e);
+//		}
+//		return uri;
+//	}
 	
-	public static URL getPageURL(final String path){
-    	URL url = null;
-		try {
-			url = new URL("http://" + DOMAIN + path);
-		} catch (MalformedURLException e) {
-			logger.error("", e);
-		}
-		return url;
-	}
+//	public static URL getPageURL(final String path){
+//    	URL url = null;
+//		try {
+//			url = new URL("http://" + DOMAIN + path);
+//		} catch (MalformedURLException e) {
+//			logger.error("", e);
+//		}
+//		return url;
+//	}
 	
-	public Document getPage(String type, String url){
-		Document page = null;
-		if(logger.isInfoEnabled()){
-			logger.info(String.format("Requesting page %s", url));
-		}
-		page = getPage(url);
-		if(logger.isInfoEnabled()){
-			logger.info(String.format("Page received. Parsing %s", url));
-		}
-		parsePage(type, page);
-		return page;
-	}
-
-	public static Document getPage(String url){
+	public Document getPage(final String url){
 		Document page = null;
 		try {
 			page = HTTPClientProxy.execute(new URI("http://" + url));
 		} catch (Exception e) {
 			logger.error(url, e);
 		}
-		
-//		try {
-//			page = JsonReader.read2(url);
-//		} catch (IOException e) {
-//			logger.error("", e);
-//		}
-		
-//		try {
-//			page = Jsoup.connect("http://" + url).userAgent("Mozilla").get();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-
 		return page;
 	}
 	
-	
-	public static class CostParser {
-		public static double parse(String value){
+	public class CostParser {
+		public double parse(String value){
 			return Double.parseDouble(value.trim().substring(0, value.length()-1).replace(",", "").trim());
 		}
 		
+	}
+
+	@Override
+	public void run() {
+		Document page = null;
+		if(logger.isInfoEnabled()){
+			logger.info(String.format("Requesting page %s", url));
+		}
+		page = getPage(url);
+		if(page != null){
+			if(logger.isInfoEnabled()){
+				logger.info(String.format("Page received. Parsing %s", url));
+			}
+			parsePage(type, page);
+		} else {
+			if(logger.isInfoEnabled()){
+				logger.info(String.format("Problem occured receiving page %s", url));
+			}
+			
+		}
 	}
 	
 }
