@@ -18,9 +18,8 @@ import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
+import com.sslv.common.Constants;
 import com.sslv.model.AD;
-
-import common.Constants;
 
 public class SSLVPageParser implements Runnable {
 

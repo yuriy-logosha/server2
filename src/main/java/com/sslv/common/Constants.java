@@ -1,4 +1,4 @@
-package common;
+package com.sslv.common;
 
 public interface Constants {
 	public static final String SEARCH_TYPE_SELL = "sell";
