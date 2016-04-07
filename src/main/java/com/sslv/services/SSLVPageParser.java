@@ -161,15 +161,8 @@ public class SSLVPageParser implements Runnable {
 					ad.setSeries(text(eval(tmpElement.select("td[class=ads_opt]").get(6))));				
 				}
 				
-				if(logger.isInfoEnabled()){
-					logger.info(String.format("%s > save", ad.getId()));
-				}
 				if(System.getProperty("debug") == null){
-					try {
-						HTTPClient.post("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + id, ad);
-					} catch (IOException e) {
-						logger.error(String.format("%s saving error. %s", ad.getId(), ad), e);
-					}
+					saveAd("http://" + DB_PROVIDER + "/" + REPOSITORY + "/"+type+"/" + id, ad);
 				}				
 			} catch (Exception e) {
 				logger.error(String.format("Exception while parsing post %s.", id), e);
@@ -281,6 +274,17 @@ public class SSLVPageParser implements Runnable {
 			logger.error(url, e);
 		}
 		return page;
+	}
+
+	public void saveAd(final String url, final AD ad){
+		if(logger.isInfoEnabled()){
+			logger.info(String.format("%s > save", ad.getId()));
+		}
+		try {
+			HTTPClient.post(url, ad);
+		} catch (IOException e) {
+			logger.error(String.format("%s saving error. %s", ad.getId(), ad), e);
+		}
 	}
 	
 	public class CostParser {
