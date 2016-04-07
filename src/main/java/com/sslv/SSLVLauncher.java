@@ -31,7 +31,7 @@ public class SSLVLauncher {
 		
 		String property = System.getProperty("threads");
 		ExecutorService executor = Executors.newFixedThreadPool((property!= null)?Integer.valueOf(property):1);
-		for(int i = 0; i < max; i++){
+		for(int i = 1; i < max; i++){
 			Thread t = new Thread(new SSLVPageParser(Constants.SEARCH_TYPE_SELL, String.format(url, i+1)));
 			executor.execute(t);
 		}
