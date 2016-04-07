@@ -25,7 +25,8 @@ public class HTTPClient {
 	public static Document get(String url) {
 		Document doc = null;
 		try {
-			logger.debug("GET " + url);
+			if(logger.isDebugEnabled())
+				logger.debug("GET " + url);
 			doc = Jsoup.connect(url).get();
 		} catch (IOException e) {
 			logger.error(e);
@@ -41,7 +42,8 @@ public class HTTPClient {
 		// "").post();
 
 		String rawData = mapper.writeValueAsString(ad);
-		logger.debug("POST " + url + " " + rawData);
+		if(logger.isDebugEnabled())
+			logger.debug("POST " + url + " " + rawData);
 
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();

@@ -111,7 +111,7 @@ public class HTTPClientProxy {
 	
 	public static Document execute(String method, URI uri) throws Exception {
 		if(logger.isDebugEnabled()){
-			logger.debug(String.format("Execute %s - %s", method, uri.getRawPath()));
+			logger.debug(String.format("%s - %s", method, uri.getPath()));
 		}
 		validate(method);
 		String resp = null;
@@ -205,7 +205,7 @@ public class HTTPClientProxy {
                     response = httpclient.execute(httpget, context);
                     condition = false;
     			} catch (Exception e) {
-    				logger.debug(String.format("Connection timeout. Retry in %s sec. %s ", 1, httpget.getURI().toURL().toString()));
+    				logger.error(String.format("Connection timeout. Retry in %s sec. %s ", 1, httpget.getURI().toURL().toString()));
     				Thread.sleep(1000);
     				tryCounter++;
     			}
