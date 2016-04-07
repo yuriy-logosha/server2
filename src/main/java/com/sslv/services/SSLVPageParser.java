@@ -277,9 +277,6 @@ public class SSLVPageParser implements Runnable {
 	}
 
 	public void saveAd(final String url, final AD ad){
-		if(logger.isInfoEnabled()){
-			logger.info(String.format("%s > save", ad.getId()));
-		}
 		try {
 			HTTPClient.post(url, ad);
 		} catch (IOException e) {
