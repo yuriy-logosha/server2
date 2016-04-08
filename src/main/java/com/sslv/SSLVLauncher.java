@@ -10,6 +10,7 @@ import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
 
 import com.sslv.common.Constants;
+import com.sslv.services.Helper;
 import com.sslv.services.SSLVPageParser;
 
 public class SSLVLauncher {
@@ -21,18 +22,18 @@ public class SSLVLauncher {
 	public static void main(String[] args) {
 
 		String url = DOMAIN + getSearchPath() + Constants.SEARCH_TYPE_SELL + "/page%s.html";
-		SSLVPageParser p = new SSLVPageParser(Constants.SEARCH_TYPE_SELL, String.format(url, 1));
-		Document firstPage = p.getPage(String.format(url, 1));
+		SSLVPageParser p = new SSLVPageParser(String.format(url, 1));
+		Document firstPage = Helper.getPage(String.format(url, 1));
 		int max = getMaxPageNumber(firstPage.select("a[name=nav_id]"));
 		if(logger.isInfoEnabled()){
 			logger.info(String.format("Found %s page(s)", max));
 		}
-		p.parsePage(Constants.SEARCH_TYPE_SELL, firstPage);
+		p.parsePage(firstPage);
 		
 		String property = System.getProperty("threads");
 		ExecutorService executor = Executors.newFixedThreadPool((property!= null)?Integer.valueOf(property):1);
 		for(int i = 1; i < max; i++){
-			Thread t = new Thread(new SSLVPageParser(Constants.SEARCH_TYPE_SELL, String.format(url, i+1)));
+			Thread t = new Thread(new SSLVPageParser(String.format(url, i+1)));
 			executor.execute(t);
 		}
 		executor.shutdown();

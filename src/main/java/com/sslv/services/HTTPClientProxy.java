@@ -111,7 +111,7 @@ public class HTTPClientProxy {
 	
 	public static Document execute(String method, URI uri) throws Exception {
 		if(logger.isDebugEnabled()){
-			logger.debug(String.format("%s - %s", method, uri.getPath()));
+			logger.debug(String.format("%s - %s", method, uri));
 		}
 		validate(method);
 		String resp = null;
@@ -222,16 +222,7 @@ public class HTTPClientProxy {
                 if (entity != null) {
                     InputStream is = entity.getContent();
                     try {
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        byte[] buf = new byte[1024*8];
-                        int len = -1;
-                        while((len = is.read(buf))!=-1){
-                            baos.write(buf, 0, len);
-                        }
-                        
-                        resp = baos.toString(StandardCharsets.UTF_8.name());
-                        return Jsoup.parse(resp, uri.getHost());
-						
+                        return Jsoup.parse(is, StandardCharsets.UTF_8.name(), uri.getHost());
 					} finally {
 						is.close();
 					}
