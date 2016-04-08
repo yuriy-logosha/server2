@@ -6,8 +6,6 @@ import java.util.List;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.sslv.services.StreetAddress;
-
 @XmlRootElement
 public class AD {
 	private long id;

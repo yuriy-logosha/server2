@@ -1,4 +1,4 @@
-package com.sslv.services;
+package com.sslv.facade;
 
 import java.io.IOException;
 import java.net.URI;
@@ -7,6 +7,7 @@ import org.apache.log4j.Logger;
 import org.jsoup.nodes.Document;
 
 import com.sslv.model.AD;
+import com.sslv.services.ADBuilder;
 
 public class Helper {
 	final static Logger logger = Logger.getLogger(ADBuilder.class);

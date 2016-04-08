@@ -15,6 +15,7 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import com.sslv.common.Constants;
+import com.sslv.facade.Helper;
 import com.sslv.model.AD;
 
 public class ADBuilder implements Runnable {
@@ -23,19 +24,22 @@ public class ADBuilder implements Runnable {
 
 	private static final String ID = "id";
 	private static final String DOMAIN = "www.ss.lv";
-	private static final String REPOSITORY = "http://127.0.0.1:9200/sslv/" + Constants.SEARCH_TYPE_SELL + "/%s";
+	private static final String REPOSITORY = "http://127.0.0.1:9200/sslv/%s/%s";
 
 	private final Element node;
 
-	public ADBuilder(final Element node) {
+	private final String searchType;
+
+	public ADBuilder(final String searchType, final Element node) {
 		this.node = node;
+		this.searchType = searchType;
 	}
 	
 	@Override
 	public void run() {
 		AD ad = build();
 		if(System.getProperty("debug") == null)
-			Helper.save(String.format(REPOSITORY, ad.getId()), ad);
+			Helper.save(String.format(REPOSITORY, searchType, ad.getId()), ad);
 	}
 
 	private AD build() {
@@ -121,6 +125,13 @@ public class ADBuilder implements Runnable {
 				ad.setArea(tmpElement.select("td#tdo_856").text());
 				tmpString = tmpElement.select("td#tdo_11").text();
 				ad.setAddr(tmpString.substring(0, tmpString.length()-8));
+				try {
+					String[] arr = tmpElement.select("td#tdo_8").text().split("\\(");
+					tmpString = arr[arr.length-1];
+					ad.setCostPerM2(Double.parseDouble(tmpString.substring(0, tmpString.length() - 6).replace(" ", "")));
+				} catch (Exception e) {
+					logger.error("", e);
+				}
 
 				// Map
 				try {

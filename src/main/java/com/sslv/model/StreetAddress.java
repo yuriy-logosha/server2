@@ -1,4 +1,4 @@
-package com.sslv.services;
+package com.sslv.model;
 
 public class StreetAddress {
 	
