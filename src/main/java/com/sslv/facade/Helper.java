@@ -6,28 +6,30 @@ import java.net.URI;
 import org.apache.log4j.Logger;
 import org.jsoup.nodes.Document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sslv.model.AD;
 import com.sslv.services.ADBuilder;
 
 public class Helper {
 	final static Logger logger = Logger.getLogger(ADBuilder.class);
 
-	public static Document getPage(final String url){
+	public static Document getPage(final String url) {
 		Document page = null;
 		try {
-			page = HTTPClientProxy.execute(new URI("http://" + url));
+			page = HTTPClientProxy.get(new URI(url));
 		} catch (Exception e) {
-			logger.error(url, e);
+			logger.error(String.format("%s Get page error.", url), e);
 		}
 		return page;
 	}
 
-	public static void save(final String url, final AD ad){
+	public static void save(final String url, final AD ad) {
 		try {
-			HTTPClient.post(url, ad);
-		} catch (IOException e) {
-			logger.error(String.format("%s saving error. %s", ad.getId(), ad), e);
+			HTTPClientProxy.put(new URI(url), ad);
+		} catch (Exception e) {
+			logger.error(String.format("%s saving error. %s %s", ad.getId(), url, ad), e);
 		}
+
 	}
 
 }

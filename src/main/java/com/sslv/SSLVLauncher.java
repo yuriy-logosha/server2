@@ -23,7 +23,7 @@ public class SSLVLauncher {
 		
 		String searchType = args[0];
 
-		String url = DOMAIN + getSearchPath() + searchType + "/page%s.html";
+		String url = "http://" + DOMAIN + getSearchPath() + searchType + "/page%s.html";
 		SearchPageParser p = new SearchPageParser(searchType, String.format(url, 1));
 		Document firstPage = Helper.getPage(String.format(url, 1));
 		int max = getMaxPageNumber(firstPage.select("a[name=nav_id]"));

@@ -109,7 +109,7 @@ public class ADBuilder implements Runnable {
 				logger.info(String.format("%s < GET %s", ad.getId(), ad.getUrl()));
 			}
 
-			Document messagePage = Helper.getPage(ad.getUrl());
+			Document messagePage = Helper.getPage("http://" + ad.getUrl());
 			if(messagePage != null){
 			
 				List<String> photos = new ArrayList<>();

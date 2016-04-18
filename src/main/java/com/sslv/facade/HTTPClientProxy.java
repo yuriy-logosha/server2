@@ -1,6 +1,5 @@
 package com.sslv.facade;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.CodingErrorAction;
@@ -20,6 +19,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.ConnectionConfig;
@@ -33,6 +33,7 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -56,11 +57,26 @@ import org.jsoup.Jsoup;
 import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+
 public class HTTPClientProxy {
 	static Logger logger = Logger.getLogger(HTTPClientProxy.class);
 
 	private static final String HTTPS = "https";
+	
+	private static RequestConfig defaultRequestConfig;
+	
+	private static Registry<ConnectionSocketFactory> socketFactoryRegistry;
 
+	static final CookieStore cookieStore = new BasicCookieStore();
+
+    // Create message constraints
+    static final MessageConstraints messageConstraints = MessageConstraints.custom()
+        .setMaxHeaderCount(200)
+        .setMaxLineLength(2000)
+        .build();
+	
     // Use custom message parser / writer to customize the way HTTP
     // messages are parsed from and written out to the data stream.
     static HttpMessageParserFactory<HttpResponse> responseParserFactory = new DefaultHttpResponseParserFactory() {
@@ -97,47 +113,42 @@ public class HTTPClientProxy {
 	static HttpConnectionFactory<HttpRoute, ManagedHttpClientConnection> connFactory = new ManagedHttpClientConnectionFactory(
 			new DefaultHttpRequestWriterFactory(), responseParserFactory);
 	
-	public static Document execute(URI uri) throws Exception {
-		return execute(HttpGet.METHOD_NAME, uri);
-	}
-
 	public static Document get(URI uri) throws Exception {
-		return execute(HttpGet.METHOD_NAME, uri);
+		return execute(new HttpGet(uri), null);
 	}
 
-	public static void put(URI uri) throws Exception {
-		execute(HttpPut.METHOD_NAME, uri);
+	public static void put(URI uri, Object body) throws Exception {
+		ObjectMapper mapper = new ObjectMapper();
+
+		String rawData = mapper.writeValueAsString(body);
+
+		HttpPut request = new HttpPut(uri);
+
+        StringEntity params =new StringEntity(rawData,"UTF-8");
+        params.setContentType("application/json");
+        request.addHeader("content-type", "application/json");
+        request.addHeader("Accept", "*/*");
+        request.addHeader("Accept-Encoding", "gzip,deflate,sdch");
+        request.addHeader("Accept-Language", "en-US,en;q=0.8");
+        request.setEntity(params);
+		execute(request, rawData);
 	}
 	
-	public static Document execute(String method, URI uri) throws Exception {
+	public static Document execute(HttpUriRequest request, String body) throws Exception {
 		if(logger.isDebugEnabled()){
-			logger.debug(String.format("%s - %s", method, uri));
+			logger.debug(String.format("%s - %s", request.getMethod(), request.getURI().toURL().toString()));
 		}
-		validate(method);
-		String resp = null;
+//		String resp = null;
 		
-        // Create a registry of custom connection socket factories for supported
-        // protocol schemes.
-        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
-            .register("http", PlainConnectionSocketFactory.INSTANCE)
-            .register(HTTPS, new SSLConnectionSocketFactory(SSLContexts.createSystemDefault()))
-            .build();
-
         // Create a connection manager with custom configuration.
-        PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry, connFactory);
+        PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(getSocketFactoryRegistry(), connFactory);
 
         // Create socket configuration
-        SocketConfig socketConfig = SocketConfig.custom().setTcpNoDelay(true).build();
-        connManager.setDefaultSocketConfig(socketConfig);
+//        SocketConfig socketConfig = SocketConfig.custom().setTcpNoDelay(true).build();
+//        connManager.setDefaultSocketConfig(socketConfig);
 
         // Validate connections after 1 sec of inactivity
         connManager.setValidateAfterInactivity(1000);
-
-        // Create message constraints
-        MessageConstraints messageConstraints = MessageConstraints.custom()
-            .setMaxHeaderCount(200)
-            .setMaxLineLength(2000)
-            .build();
 
         // Create connection configuration
         ConnectionConfig connectionConfig = ConnectionConfig.custom()
@@ -151,103 +162,78 @@ public class HTTPClientProxy {
         // by default or for a specific host.
         connManager.setDefaultConnectionConfig(connectionConfig);
 
-        // Use custom cookie store if necessary.
-        CookieStore cookieStore = new BasicCookieStore();
-//        BasicClientCookie cookie = new BasicClientCookie("PHPSESSID", "53da1ecd15fb73b09327ffa2a891c054");
-//        cookie.setDomain("www.ss.lv");
-//        cookie.setPath("/");
-//		cookieStore.addCookie(cookie);
-        
         // Use custom credentials provider if necessary.
-        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         
-        // Create global request configuration
-        RequestConfig defaultRequestConfig = RequestConfig.custom()
-            .setCookieSpec(CookieSpecs.DEFAULT)
-            .setExpectContinueEnabled(true)
-            .setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST))
-            .setProxyPreferredAuthSchemes(Arrays.asList(AuthSchemes.BASIC))
-            .build();
 
         // Create an HttpClient with the given custom dependencies and configuration.
         CloseableHttpClient httpclient = HttpClients.custom()
             .setConnectionManager(connManager)
             .setDefaultCookieStore(cookieStore)
-            .setDefaultCredentialsProvider(credentialsProvider)
-            .setDefaultRequestConfig(defaultRequestConfig)
+//            .setDefaultCredentialsProvider(credentialsProvider)
+            .setDefaultRequestConfig(getRequestConfig())
             .build();
 
         try {
 
-        	HttpGet httpget = new HttpGet(uri);
-
-            // Request configuration can be overridden at the request level.
-            // They will take precedence over the one set at the client level.
-            RequestConfig requestConfig = RequestConfig.copy(defaultRequestConfig)
-                .setSocketTimeout(5000)
-                .setConnectTimeout(5000)
-                .setConnectionRequestTimeout(5000)
-                .build();
-            httpget.setConfig(requestConfig);
-
             // Execution context can be customized locally.
-            HttpClientContext context = HttpClientContext.create();
+//            HttpClientContext context = HttpClientContext.create();
             // Contextual attributes set the local context level will take
             // precedence over those set at the client level.
-            context.setCookieStore(cookieStore);
-            context.setCredentialsProvider(credentialsProvider);
+//            context.setCookieStore(cookieStore);
+//            context.setCredentialsProvider(credentialsProvider);
 
             CloseableHttpResponse response = null;
-            boolean condition = true;
+            boolean done = false;
             int tryCounter = 1;
 			do {
                 try {
-                    response = httpclient.execute(httpget, context);
-                    condition = false;
+                    response = httpclient.execute(request);
+                    done = true;
     			} catch (Exception e) {
-    				logger.error(String.format("Connection timeout. Retry in %s sec. %s ", 1, httpget.getURI().toURL().toString()));
-    				Thread.sleep(1000);
+//    				logger.error(String.format("Connection timeout. Retry in %s sec. %s ", 2, request.getURI().toURL().toString()));
+    				logger.error("", e);
+    				Thread.sleep(2000);
     				tryCounter++;
     			}
 				
-			} while (condition && tryCounter > 10);
+			} while (!done && tryCounter > 10);
+			
         	if(response != null)
             try {
-            	HttpEntity entity = null;
-        		entity = response.getEntity();
-
-                if(logger.isDebugEnabled()){
-                	logger.debug(response.getStatusLine() + " - " + httpget.getURI());
-                }
-                if (entity != null) {
-                    InputStream is = entity.getContent();
-                    try {
-                        return Jsoup.parse(is, StandardCharsets.UTF_8.name(), uri.getHost());
-					} finally {
-						is.close();
-					}
-                    
-                }
-
                 // Once the request has been executed the local context can
                 // be used to examine updated state and various objects affected
                 // by the request execution.
 
-                // Last executed request
-                context.getRequest();
-                // Execution route
-                context.getHttpRoute();
-                // Target auth state
-                context.getTargetAuthState();
-                // Proxy auth state
-                context.getTargetAuthState();
-                // Cookie origin
-                context.getCookieOrigin();
-                // Cookie spec used
-                context.getCookieSpec();
-                // User security token
-                context.getUserToken();
+//                // Last executed request
+//                context.getRequest();
+//                // Execution route
+//                context.getHttpRoute();
+//                // Target auth state
+//                context.getTargetAuthState();
+//                // Proxy auth state
+//                context.getTargetAuthState();
+//                // Cookie origin
+//                context.getCookieOrigin();
+//                // Cookie spec used
+//                context.getCookieSpec();
+//                // User security token
+//                context.getUserToken();
 
+            	HttpEntity entity = response.getEntity();
+
+                if(logger.isDebugEnabled()){
+                	logger.debug(response.getStatusLine() + " - " + request.getURI().toURL().toString());
+                }
+                if (entity != null) {
+                    InputStream is = entity.getContent();
+                    try {
+                        return Jsoup.parse(is, StandardCharsets.UTF_8.name(), request.getURI().toURL().toString());
+					} finally {
+						is.close();
+					}
+                }
+                
             } finally {
                 response.close();
             }
@@ -276,6 +262,36 @@ public class HTTPClientProxy {
 
 	public static URIBuilder getURIBuilder(String host){
 		return new URIBuilder().setScheme(HTTPS).setHost(host);
+	}
+
+	public static RequestConfig getRequestConfig() {
+		if(defaultRequestConfig == null) {
+	        // Create global request configuration
+	        defaultRequestConfig = RequestConfig.custom()
+	            .setCookieSpec(CookieSpecs.DEFAULT)
+	            .setSocketTimeout(5000)
+	            .setConnectTimeout(5000)
+	            .setConnectionRequestTimeout(5000)
+	            .setExpectContinueEnabled(true)
+	            .setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.NTLM, AuthSchemes.DIGEST))
+	            .setProxyPreferredAuthSchemes(Arrays.asList(AuthSchemes.BASIC))
+	            .build();
+
+		}
+		return defaultRequestConfig;
+	}
+
+	public static Registry<ConnectionSocketFactory> getSocketFactoryRegistry() {
+		if(socketFactoryRegistry == null) {
+	        // Create a registry of custom connection socket factories for supported
+	        // protocol schemes.
+	        socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory>create()
+	            .register("http", PlainConnectionSocketFactory.INSTANCE)
+	            .register(HTTPS, new SSLConnectionSocketFactory(SSLContexts.createSystemDefault()))
+	            .build();
+
+		}
+		return socketFactoryRegistry;
 	}
 
 }
