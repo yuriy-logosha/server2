@@ -34,7 +34,7 @@ public class HTTPClient {
 		return doc;
 	}
 
-	public static void post(String url, AD ad) throws IOException {
+	public void post(String url, AD ad) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 
 		// Jsoup.connect(url).header("Accept",
@@ -43,7 +43,7 @@ public class HTTPClient {
 
 		String rawData = mapper.writeValueAsString(ad);
 		if(logger.isDebugEnabled())
-			logger.debug("POST " + url + " " + rawData);
+			logger.debug("POST2 " + url + " " + rawData);
 
 		URL obj = new URL(url);
 		HttpURLConnection con = (HttpURLConnection) obj.openConnection();
